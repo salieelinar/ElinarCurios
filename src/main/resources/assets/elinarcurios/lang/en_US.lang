@@ -1,0 +1,151 @@
+item.infiniteBackpack.name=Infinite Backpack
+container.infiniteBackpack=Infinite Backpack
+itemGroup.elinarcurios=Elinar Curios
+keys.elinarcurios.category=Elinar Curios
+keys.elinarcurios.open=Open Infinite Backpack
+button.elinarcurios.equip=Equip
+button.elinarcurios.unequip=Unequip
+elinarcurios:messages.already.equipped=You are already wearing something on your back!
+item.elinarcurios.tooltip.motto=Shouldering infinity, achieving eternity.
+item.elinarcurios.tooltip.slots=Slots used: %s / %s
+item.elinarcurios.tooltip.max=Each slot can hold up to 2147483647 items
+item.elinarcurios.tooltip.pages=%s independent pages × %s slots
+item.elinarcurios.tooltip.invulnerable=While worn: immune to all damage, cannot die
+item.elinarcurios.tooltip.equip=Right-click to open. Equip it from the backpack GUI, then press the hotkey to open it anytime.
+item.elinarcurios.tooltip.hint=Hold Shift for more information
+button.elinarcurios.buff.nv=NV
+tile.peaceTotem.name=Peace Totem
+tile.peaceTotem.tooltip.flavor=Peace~Tranquility~
+tile.peaceTotem.tooltip.range=Blocks natural hostile-mob spawning within %s blocks horizontally and %s vertically; spawners are unaffected
+
+# Thaumcraft soft-integration: Novice Boundless Wand (beginner-friendly, no cheat refill)
+item.Wand.elinar.rod=Tianxuan Rod
+item.Wand.elinar.cap=Tianxuan Cap
+item.elinarcurios.wand.name=Celestial Wand
+item.elinarcurios.wand.tooltip=§6§oAll the power of the universe, held in your palm.
+container.eternalChest=Eternal Chest
+tile.eternalChest.name=Eternal Chest
+container.elinarVoidChest=Void Treasure Chest
+tile.elinarVoidChest.name=Void Treasure Chest
+tile.elinarVoidChest.tooltip.solidify=Click "Solidify": every item in the chest is set to 1,000,000,000
+tile.elinarVoidChest.tooltip.dissociate=Click "Dissociate": every item in the chest is set to 1
+button.elinarcurios.solidify=Solidify
+button.elinarcurios.dissociate=Dissociate
+
+# ---- Wireless Battery (merged from EnergyCeph) ----
+item.wirelessBattery.name=Tianxuan Void Battery (%s)
+item.wirelessBattery.tooltip.storage=Storage
+item.wirelessBattery.tooltip.bound=Wireless bound
+item.wirelessBattery.tooltip.unbound=Not bound (right-click to bind)
+item.wirelessBattery.tooltip.voltage=Rated
+item.wirelessBattery.tooltip.refillHint=Refills from the wireless grid when charge drops below 30%
+item.wirelessBattery.tooltip.flavor=Thunder bottled, violet lightning hums
+elinarcurios:messages.battery.bound=Bound to wireless grid: %s
+elinarcurios:messages.battery.alreadyBound=Battery already bound to this wireless grid
+
+# ---- Tianshu Thermostatic Core (Reactor Plating + Coolant Cell + Heat Exchanger) ----
+item.elinarReactorCore.name=Tianshu Thermostatic Core
+item.elinarReactorCore.tooltip.storage=Stored heat
+item.elinarReactorCore.tooltip.vent=Self venting
+item.elinarReactorCore.tooltip.switchSide=Active draw (neighbours)
+item.elinarReactorCore.tooltip.switchReactor=Core draw (reactor hull)
+item.elinarReactorCore.tooltip.plating=Reactor plating
+item.elinarReactorCore.tooltip.note1=Works as soon as it is placed inside a nuclear reactor: raises the hull heat capacity and dampens explosions.
+item.elinarReactorCore.tooltip.note2=Self venting counts as HU output in a fluid reactor; the durability bar shows the current heat ratio.
+item.elinarReactorCore.tooltip.flavor=A myriad of heat, sealed within a square inch
+
+# ---- Tianxuan Thermostatic Core (99% hard lock + global output boost, crafted from 9 Tianshu cores) ----
+item.elinarTianxuanCore.name=Tianxuan Thermostatic Core
+item.elinarTianxuanCore.tooltip.lock=Locked core temperature
+item.elinarTianxuanCore.tooltip.boost=Global output boost
+item.elinarTianxuanCore.tooltip.safety=Safety
+item.elinarTianxuanCore.tooltip.safetyValue=No meltdown, ever
+item.elinarTianxuanCore.tooltip.note1=Works as soon as it is placed inside a nuclear reactor: the core temperature is pinned at 99% of the hull capacity, with no drift and no meltdown.
+item.elinarTianxuanCore.tooltip.note2=The hull heat effect is pinned to zero as well: radiation, fires, block damage and explosion power all become zero.
+item.elinarTianxuanCore.tooltip.flavor=~ The core is eternal ~
+
+# ---- Fresnel Lens (even neutron irradiation of the whole reactor: ripens Sunnarium / Tritium breeder rods) ----
+item.elinarFresnelLens.name=Fresnel Lens
+item.elinarFresnelLens.tooltip.pulses=Irradiation
+item.elinarFresnelLens.tooltip.pulsesUnit=neutron pulses/s per cell
+item.elinarFresnelLens.tooltip.coverage=Coverage
+item.elinarFresnelLens.tooltip.coverageValue=every cell of the reactor
+item.elinarFresnelLens.tooltip.cost=Own cost
+item.elinarFresnelLens.tooltip.costValue=no heat, no EU, no wear
+item.elinarFresnelLens.tooltip.note1=Works as soon as it is placed inside a nuclear reactor: %s neutron pulses per second are delivered to every breeder cell in the reactor.
+item.elinarFresnelLens.tooltip.note2=It ripens Sunnarium / Tritium breeder rods; their speed scales only with hull heat (+100% per 3000 heat) and is identical in every cell, so the whole reactor finishes at once.
+item.elinarFresnelLens.tooltip.note3=Irradiation continues while the reactor is redstone-shut down; stacking several lenses adds their pulse counts.
+item.elinarFresnelLens.tooltip.flavor=Ten thousand beams, one focus
+
+# ---- Celestial Void Energy Node (single-block GT machine: 6-face input -> full-flush / 100s fallback -> wireless grid) ----
+gt.blockmachines.celestinull.name=Celestial Void Energy Node
+elinarcurios.voidNode.gui.stored=Cached:
+elinarcurios.voidNode.gui.capacity=Capacity:
+elinarcurios.voidNode.gui.avg_in=Live input (recent avg):
+elinarcurios.voidNode.gui.countdown=Next fallback flush in:
+elinarcurios.voidNode.gui.seconds=s
+elinarcurios.voidNode.gui.mode.full=Trigger: flush when full
+elinarcurios.voidNode.gui.mode.periodic=Trigger: 100s fallback
+elinarcurios.voidNode.gui.warn1=Warning: over-voltage input explodes
+elinarcurios.voidNode.gui.warn2=a full buffer blocks incoming cables
+
+# ---- Lunchbox (multi-page food container: 12 pages x 243 slots, int-sized stacks) ----
+item.elinarcurios.lunchBox.name=Eternal Lunchbox
+container.lunchBox=Eternal Lunchbox
+item.elinarcurios.lunchBox.tooltip.motto=A universe of feasts, held in a single box.
+item.elinarcurios.lunchBox.tooltip.slots=Slots used: %s / %s
+item.elinarcurios.lunchBox.tooltip.pages=%s independent pages × %s slots
+item.elinarcurios.lunchBox.tooltip.max=Each slot can hold up to 2147483647 items
+item.elinarcurios.lunchBox.tooltip.eat=Right-click while the lid is open to eat: it picks the best food across every page
+item.elinarcurios.lunchBox.tooltip.open=Sneak-right-click to open/close the lid; right-click while closed to browse the storage
+item.elinarcurios.lunchBox.state.closed=§7State: lid closed - right-click to browse the storage
+item.elinarcurios.lunchBox.state.empty=§7State: lid open, but there is no food inside - right-click to browse the storage
+item.elinarcurios.lunchBox.state.full=§7State: lid open, but you are not hungry - right-click to browse the storage
+item.elinarcurios.lunchBox.state.ready=§aState: lid open - right-click to eat
+item.elinarcurios.lunchBox.msg.empty=There is no food in the lunchbox
+item.elinarcurios.lunchBox.msg.full=You are not hungry enough to eat
+
+# ---- mirror blocks (merged from ALAPattern, 2026-10-16) ----
+gt.blockmachines.alap_pattern_mirror_item.name=Pattern Assembly Mirror (Item)
+gt.blockmachines.alap_pattern_mirror_fluid.name=Pattern Assembly Mirror (Fluid)
+
+alap.chat.linked=Linked to pattern assembly
+alap.chat.link_failed=Link failed: the Data Stick has no valid pattern assembly position
+alap.chat.slot_set=Mirror slot index -> %s
+alap.chat.auto_index=Slot index auto-detected from the assembly line position -> %s
+
+# ---- high-tier assembly line (merged from the ElinarAssemblyLine standalone 0.1.1, 2026-10-18) ----
+gt.blockmachines.elinar.machine.high_tier_assemblyline.name=High-Tier Assembly Line
+gt.blockmachines.elinar.machine.comprehensive_mining_plant.name=Comprehensive Mining Plant
+elinarinfminer.gui.title=Comprehensive Mining Plant
+elinarinfminer.gui.parallel.title=Parallel / Output Mode
+elinarinfminer.gui.parallel.hint=Parallel: next start; mode: instant
+elinarinfminer.gui.parallel.limits=Ore 1~48000 / Fluid 0~2000
+elinarinfminer.gui.mode=Output mode
+elinarinfminer.gui.ore=Ore Parallel
+elinarinfminer.gui.fluid=Fluid Parallel
+gt.blockmachines.elinar.machine.comprehensive_mining_plant.tooltip=Comprehensive Resource Harvester\n32768 EU/t per parallel (LuV)\nOre: 64 ores/s per parallel\nFluid: 1 weight/s per parallel\nModes: mod1 realtime / mod2 gather / mod3 settle\nPlace to join your wireless EU network; outputs via AE\nKeeps its chunk loaded and recovers after a server restart
+
+# ---- StructureLib hologram projector item source (2026-10-26) ----
+structurelib.sortedregistry.inventoryproviders.6500-infinite-backpack=Infinite Backpack
+structurelib.sortedregistry.inventoryproviders.6500-infinite-backpack.tooltip=Worn or carried Infinite Backpacks (all 10 pages are searched)
+
+# ---- Advanced Radio Hatch (2026-10-31, radioactive material consumption speed 1/10000) ----
+gt.blockmachines.elinar.machine.radio_hatch_advanced.name=Advanced Radio Hatch
+elinarcurios.radhatch.adv.desc.0=Multiblock radioactive item hatch (advanced)
+elinarcurios.radhatch.adv.desc.1=Same radioactive material list, SV values and radiation shutter control as the original Radio Hatch
+elinarcurios.radhatch.adv.desc.2=Radioactive material consumption speed is 1/10000 of the original
+elinarcurios.radhatch.adv.desc.3=Example: Americium rod 59.9 s -> 599,000 s (about 166.4 hours / 6.9 days)
+elinarcurios.radhatch.adv.desc.4=Crafted from 9 original Radio Hatches (any voltage tier)
+
+# ---- Pattern Assembly Detector (2026-11-07: emits redstone while the bound pattern assembly has materials) ----
+gt.blockmachines.elinar.machine.pattern_redstone_detector.name=Pattern Assembly Detector
+elinardetector.chat.linked=Linked to the pattern assembly
+
+# ---- Beam Flux Multiplier (2026-11-07: front-in / back-out, flux 1x~32768x) ----
+gt.blockmachines.elinar.machine.beam_flux_multiplier.name=Beam Flux Multiplier
+elinarcurios.beamflux.desc.0=Front face takes the beam pipe input, back face outputs (use a wrench to choose the front)
+elinarcurios.beamflux.desc.1=Right-click to set the flux multiplier: 1x ~ 32768x (press Enter)
+elinarcurios.beamflux.desc.2=Only the flux (rate) is multiplied; energy / focus / particle type pass through unchanged
+elinarcurios.beamflux.desc.3=Chainable; output flux is capped at 2147483647
+elinarcurios.beamflux.desc.4=Requires an upstream beam output hatch; the whole beam line must be straight

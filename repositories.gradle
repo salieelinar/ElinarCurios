@@ -1,0 +1,5 @@
+// Add any additional repositories for your dependencies here
+
+repositories {
+    // The GTNH Maven repository is added automatically by the GTNHGradle convention plugin.
+}

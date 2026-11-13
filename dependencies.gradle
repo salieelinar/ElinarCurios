@@ -1,0 +1,82 @@
+// Add your dependencies here
+//
+// ★★ 铁律（2026-09-13 连续两次踩坑后定下）：**编译期依赖的版本必须与玩家整合包实际运行的版本一致。**
+// 反例一：GT5U 用 maven 上的 5.09.54.124 编译，而 GTNH 2.8.4 跑的是 5.09.51.482 —— GUI 类继承了
+//        5.09.54 才有的 `MTETieredMachineBlockBaseGui` / `CommonWidgets`，运行时不存在，
+//        GUI 一打开就类加载失败**且被 GT 静默吞掉**（无异常、无崩溃），白排查十几轮。
+// 反例二：GTNHLib 用 0.11.37 编译，运行时是 0.7.10 —— 引用 `NumberFormatUtil` 直接让客户端崩在 preInit。
+// 现在全部改用**运行时真实 jar** 作为本地依赖（`files(...)`，不走 maven，离线也能编）。
+// 版本来源：`D:\Agent\GTNH\FullPack\manifests\<整合包版本>.json`（2026-09-13 起清单集中到 manifests\；
+// 旧路径 `FullPack\src\DreamAssemblerXXL-master\releases\manifests\` 已随目录整理失效）。
+// 2.9.0-RC-1 的官方锁定值：GT5-Unofficial 5.09.54.183 / GTNHLib 0.11.51。
+
+dependencies {
+    // GT5U：机器（天玄虚空能量节点）与天玄·虚空电池都引用它；自 2026-09-12 起为项目级硬依赖。
+    compileOnly files('D:/Agent/GTNH/build-libs/2.9.0-RC-1/gregtech-5.09.54.183.jar')
+    // GTNHLib：编译期必须要（GT5U 的 MetaTileEntity 继承链上有 `com.gtnewhorizon.gtnhlib.capability.CapabilityProvider`），
+    // 但**绝不能在运行期引用它的类**（不同版本间 API 变动大，见上）。版本对齐运行时 2.9.0-RC-1 的 0.11.51。
+    compileOnly files(
+        'D:/Agent/GTNH/build-libs/2.9.0-RC-1/gtnhlib-0.11.51.jar')
+    // StructureLib：两个「总成镜像」的 detectBusIndex() 会引用 `MTEAssemblyLine`（按装配线位置
+    // 自动识别格号），编译器因此要加载该类的类型层次，需要 structurelib 的接口在场。GTNH 必装，
+    // 运行时由整合包提供，所以只 compileOnly。2026-10-16 合并 ALAPattern 时补上。
+    compileOnly files(
+        'D:/Agent/GTNH/build-libs/2.9.0-RC-1/structurelib-1.4.45.jar')
+
+    // ModularUI2：`buildUI` / `ModularPanel` / `Flow` / `IKey` / `LongSyncValue` 都来自它。版本对齐运行时 2.3.91-1.7.10。
+    compileOnly files(
+        'D:/Agent/GTNH/build-libs/2.9.0-RC-1/modularui2-2.3.91-1.7.10.jar')
+    // AE2：GT5U 的 `MetaTileEntity implements appeng.api.crafting.ICraftingIconProvider`，extends GT5U MTE 基类的类
+    // 必须能在编译期看到 AE2。版本对齐运行时 rv3-beta-1073。
+    compileOnly files(
+        'D:/Agent/GTNH/build-libs/2.9.0-RC-1/appliedenergistics2-rv3-beta-1073-GTNH.jar')
+    compileOnly('net.industrial-craft:industrialcraft-2:2.2.828-experimental:dev') { transitive = false }
+    // Thaumcraft 仍为可选软联动（编译期引用，运行时由整合包提供，无 TC 时照常运行，只是不注册法杖）。
+    // dev 环境运行需要 Baubles，否则 TC 的 DepLoader 会去抓失效的 dropbox 链接。
+    implementation('thaumcraft:Thaumcraft:1.7.10-4.2.3.5:dev') { transitive = false }
+    runtimeOnly('com.github.GTNewHorizons:Baubles-Expanded:2.2.21-GTNH:dev') { transitive = false }
+    // SpiceOfLife(生活调味料,GTNH 必装):午餐盒直接继承它的 `ItemFoodContainer` 进食协议
+    // (盒盖 Open 状态 / EnumAction.eat 32 tick 原版进食动画 / onEaten 智能选食 / IEdible 食物值),
+    // 存储层则由 ElinarCurios 自己的多页 NBT 引擎覆写。版本对齐运行时 2.9.0-RC-1 的 2.2.10-carrot。
+    // 注册点必须用 `Loader.isModLoaded("SpiceOfLife")` 包住:继承类在类加载阶段就需要父类。
+    compileOnly rfg.deobf(
+        files(
+            'D:/Agent/GTNH/build-libs/2.9.0-RC-1/SpiceOfLife-2.2.10-carrot.jar'))
+    // AppleCore(SpiceOfLife 的前置,GTNH 必装):食物判定 `AppleCoreAPI.accessor.isFood` 与
+    // `FoodValues` 都来自它,且 SpiceOfLife 的类签名里大量出现 AppleCore 类型,必须同进编译类路径。
+    // 版本对齐运行时 3.3.13。
+    compileOnly rfg.deobf(
+        files(
+            'D:/Agent/GTNH/build-libs/2.9.0-RC-1/AppleCore-3.3.13.jar'))
+    // Mixin API：gradle.properties 打开 usesMixins 后，gtnhgradle 会去 Maven 拉
+    // io.github.legacymoddingmc:unimixins:0.3.1，本机网络取不到。改成用玩家整合包里已经装着的
+    // +unimixins-all jar 作为编译期 API（离线可编，运行时由整合包提供同一套 Mixin 类）。
+    compileOnly files(
+        'D:/Agent/GTNH/build-libs/2.9.0-RC-1/+unimixins-all-1.7.10-0.3.1.jar')
+    // ★ 同一份 jar 还要进 **dev 运行期**（2026-09-29 修）：`usesMixins = true` 让 gtnhgradle 给
+    // GradleStart 加了 `--tweakClass org.spongepowered.asm.launch.MixinTweaker`，但本工程把 unimixins
+    // 从 Maven 排除、只给了 compileOnly ⇒ dev 端类路径上根本没有 Mixin 启动器，runClient 直接
+    // `ClassNotFoundException: org.spongepowered.asm.launch.MixinTweaker` 启动失败（不是 mod 的问题）。
+    // 这条只影响 dev；成品 jar 里不含它（玩家实例由整合包自带的 +unimixins 提供）。
+    runtimeOnly files(
+        'D:/Agent/GTNH/build-libs/2.9.0-RC-1/+unimixins-all-1.7.10-0.3.1.jar')
+
+    // jvmdg record stub：高级装配线（MTEHighTierAssemblyLine）直接调用 GT5U 的 StructureErrors，
+    // 而后者编译期继承 xyz.wagyourtail.jvmdg.j16.stub.java_base.J_L_Record（GTNHGradle 正式工程自带，
+    // 本工程手动补一份 compileOnly stub；不会进入发布 jar）。
+    compileOnly files('D:/Agent/GTNH/build-libs/2.9.0-RC-1/Waila-1.19.34.jar')
+    compileOnly files('D:/Agent/GTNH/build-libs/2.9.0-RC-1/modularui-1.3.4.jar')
+    compileOnly files('libs/jvmdg-stub.jar')
+}
+
+// 与上面的本地 Mixin jar 配套：屏蔽 gtnhgradle 为 usesMixins 自动添加的、本机取不到的 Maven 依赖。
+configurations.configureEach {
+    exclude group: 'io.github.legacymoddingmc', module: 'unimixins'
+}
+// Mixin 注解处理器的传递依赖（asm-debug-all / guava / gson）同样取不到。AP 只做编译期校验与
+// refmap 生成，而本工程注入的是非混淆的 GT5U 类、不需要 refmap，因此该配置一并清空。
+configurations.matching { it.name == 'annotationProcessor' }.configureEach {
+    exclude group: 'org.ow2.asm', module: 'asm-debug-all'
+    exclude group: 'com.google.guava', module: 'guava'
+    exclude group: 'com.google.code.gson', module: 'gson'
+}

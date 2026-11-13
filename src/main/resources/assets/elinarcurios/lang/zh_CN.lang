@@ -1,0 +1,151 @@
+item.infiniteBackpack.name=无尽背包
+container.infiniteBackpack=无尽背包
+itemGroup.elinarcurios=埃利纳之珍奇
+keys.elinarcurios.category=埃利纳之珍奇
+keys.elinarcurios.open=打开无尽背包
+button.elinarcurios.equip=穿上
+button.elinarcurios.unequip=脱下
+elinarcurios:messages.already.equipped=你的背上已经装备了物品！
+item.elinarcurios.tooltip.motto=背负无尽，成就永恒
+item.elinarcurios.tooltip.slots=已用格子: %s / %s
+item.elinarcurios.tooltip.max=每格可存储 2147483647 个物品
+item.elinarcurios.tooltip.pages=%s 页独立存储 × 每页 %s 格
+item.elinarcurios.tooltip.invulnerable=穿戴时:免疫所有伤害、不会死亡
+item.elinarcurios.tooltip.equip=右键打开背包；在背包界面点击「穿上」背到背上，之后按快捷键随时打开。
+item.elinarcurios.tooltip.hint=按住 Shift 查看更多信息
+button.elinarcurios.buff.nv=夜视
+tile.peaceTotem.name=和平图腾
+tile.peaceTotem.tooltip.flavor=和平~宁静~
+tile.peaceTotem.tooltip.range=阻止水平 %s 格、垂直 %s 格内敌对生物自然生成；刷怪笼不受影响
+
+# Thaumcraft 软联动:初心无垠法杖(新手友好,无作弊回满)
+item.Wand.elinar.rod=天玄杖杆
+item.Wand.elinar.cap=天玄杖端
+item.elinarcurios.wand.name=天玄之杖
+item.elinarcurios.wand.tooltip=§6§o寰宇之力 握于掌心
+container.eternalChest=永恒箱子
+tile.eternalChest.name=永恒箱子
+container.elinarVoidChest=虚界百宝箱
+tile.elinarVoidChest.name=虚界百宝箱
+tile.elinarVoidChest.tooltip.solidify=点击「固化」:箱内所有物品的数量统一变为 10 亿
+tile.elinarVoidChest.tooltip.dissociate=点击「解离」:箱内所有物品的数量统一变为 1
+button.elinarcurios.solidify=固化
+button.elinarcurios.dissociate=解离
+
+# ---- 天玄·虚空电池(无线能量,并入自 EnergyCeph) ----
+item.wirelessBattery.name=天玄·虚空电池(%s)
+item.wirelessBattery.tooltip.storage=储能
+item.wirelessBattery.tooltip.bound=无线绑定
+item.wirelessBattery.tooltip.unbound=未绑定(手持右键绑定)
+item.wirelessBattery.tooltip.voltage=额定
+item.wirelessBattery.tooltip.refillHint=电量降至 30% 时,将自动从无线电网补满
+item.wirelessBattery.tooltip.flavor=渊雷入匣,紫电自鸣
+elinarcurios:messages.battery.bound=已绑定无线电网: %s
+elinarcurios:messages.battery.alreadyBound=该电池已绑定当前无线电网
+
+# ---- 天枢·恒温核心(反应堆隔板 + 冷却单元 + 热交换器三合一元件) ----
+item.elinarReactorCore.name=天枢·恒温核心
+item.elinarReactorCore.tooltip.storage=已储热
+item.elinarReactorCore.tooltip.vent=自身散热
+item.elinarReactorCore.tooltip.switchSide=主动吸热(相邻元件)
+item.elinarReactorCore.tooltip.switchReactor=核心吸热(堆芯)
+item.elinarReactorCore.tooltip.plating=反应堆隔板
+item.elinarReactorCore.tooltip.note1=放置于核反应堆内即生效:抬高堆芯热容上限、压制爆炸威力。
+item.elinarReactorCore.tooltip.note2=自身散热在流体反应堆中会计入 HU 产出;热量条显示的是当前储热比例。
+item.elinarReactorCore.tooltip.flavor=万钧之热,敛于方寸
+
+# ---- 天玄·恒温核心(99% 硬锁 + 全局产能增益,由 9 个天枢核心合成) ----
+item.elinarTianxuanCore.name=天玄·恒温核心
+item.elinarTianxuanCore.tooltip.lock=锁定堆芯温度
+item.elinarTianxuanCore.tooltip.boost=全局产能增益
+item.elinarTianxuanCore.tooltip.safety=安全等级
+item.elinarTianxuanCore.tooltip.safetyValue=永不熔毁
+item.elinarTianxuanCore.tooltip.note1=放置于核反应堆内即生效:堆芯温度恒定为热容上限的 99%,不波动、不熔毁。
+item.elinarTianxuanCore.tooltip.note2=同时把堆芯热效应压至零:辐射、着火、烧毁方块与爆炸威力全部归零。
+item.elinarTianxuanCore.tooltip.flavor=~核永恒~
+
+# ---- 菲涅尔透镜(全堆均匀中子辐照:催熟阳光化合物棒 / 氚棒) ----
+item.elinarFresnelLens.name=菲涅尔透镜
+item.elinarFresnelLens.tooltip.pulses=辐照强度
+item.elinarFresnelLens.tooltip.pulsesUnit=次中子脉冲/秒/格
+item.elinarFresnelLens.tooltip.coverage=辐照范围
+item.elinarFresnelLens.tooltip.coverageValue=整堆每一格
+item.elinarFresnelLens.tooltip.cost=自身开销
+item.elinarFresnelLens.tooltip.costValue=不产热、不耗电、不磨损
+item.elinarFresnelLens.tooltip.note1=放置于核反应堆内即生效:每秒向堆内每一格的增殖元件各发 %s 次中子脉冲。
+item.elinarFresnelLens.tooltip.note2=照射催熟阳光化合物棒 / 氚棒,进度只随堆芯热量加速(每 3000 热量 +100%),与摆位无关、全堆同步。
+item.elinarFresnelLens.tooltip.note3=关堆(红石停机)时照常辐照;多枚透镜的脉冲数线性叠加。
+item.elinarFresnelLens.tooltip.flavor=万束中子,同赴一焦
+
+# ---- 天玄虚空能量节点(GT 单方块机器,六面进电 → 攒满即冲/100 秒兜底 → 无线电网) ----
+gt.blockmachines.celestinull.name=天玄虚空能量节点
+elinarcurios.voidNode.gui.stored=缓存电量：
+elinarcurios.voidNode.gui.capacity=总容量：
+elinarcurios.voidNode.gui.avg_in=实时输入(最近均值)：
+elinarcurios.voidNode.gui.countdown=距下次兜底倾倒：
+elinarcurios.voidNode.gui.seconds=秒
+elinarcurios.voidNode.gui.mode.full=当前触发方式：攒满即冲
+elinarcurios.voidNode.gui.mode.periodic=当前触发方式：100 秒兜底
+elinarcurios.voidNode.gui.warn1=警告：输入电压超过上限会爆炸
+elinarcurios.voidNode.gui.warn2=缓存满时导线里的电会被卡住
+
+# ---- 午餐盒(多页食物容器:12 页 × 243 格,每格 int 上限) ----
+item.elinarcurios.lunchBox.name=天厨·永恒食盒
+container.lunchBox=天厨·永恒食盒
+item.elinarcurios.lunchBox.tooltip.motto=一盒藏寰宇，饥馑不临身
+item.elinarcurios.lunchBox.tooltip.slots=已用格子: %s / %s
+item.elinarcurios.lunchBox.tooltip.pages=%s 页独立存储 × 每页 %s 格
+item.elinarcurios.lunchBox.tooltip.max=每格可存储 2147483647 个物品
+item.elinarcurios.lunchBox.tooltip.eat=开盖后右键即食:自动跨全页挑选当前最优的食物
+item.elinarcurios.lunchBox.tooltip.open=潜行右键开/合盒盖；合盖时右键打开仓库
+item.elinarcurios.lunchBox.state.closed=§7状态：盒盖合着 —— 右键打开仓库
+item.elinarcurios.lunchBox.state.empty=§7状态：盒盖已开，但盒内没有食物 —— 右键打开仓库
+item.elinarcurios.lunchBox.state.full=§7状态：盒盖已开，但你并不饿 —— 右键打开仓库
+item.elinarcurios.lunchBox.state.ready=§a状态：盒盖已开 —— 右键即可进食
+item.elinarcurios.lunchBox.msg.empty=食盒里没有食物
+item.elinarcurios.lunchBox.msg.full=你并不饿，吃不下
+
+# ---- mirror blocks (merged from ALAPattern, 2026-10-16) ----
+gt.blockmachines.alap_pattern_mirror_item.name=物品总成镜像
+gt.blockmachines.alap_pattern_mirror_fluid.name=流体总成镜像
+
+alap.chat.linked=已绑定到样板总成
+alap.chat.link_failed=绑定失败：闪存里没有有效的样板总成坐标
+alap.chat.slot_set=镜像格位 → 第 %s 格
+alap.chat.auto_index=已按装配线位置自动识别为第 %s 格
+
+# ---- 高级装配线（由 ElinarAssemblyLine 独立验证版 0.1.1 并入，2026-10-18） ----
+gt.blockmachines.elinar.machine.high_tier_assemblyline.name=高级装配线
+gt.blockmachines.elinar.machine.comprehensive_mining_plant.name=综合采掘工厂
+elinarinfminer.gui.title=综合采掘工厂
+elinarinfminer.gui.parallel.title=并行 / 产出模式
+elinarinfminer.gui.parallel.hint=并行：下次启动生效；模式：立即生效
+elinarinfminer.gui.parallel.limits=矿石 1~48000 / 流体 0~2000
+elinarinfminer.gui.mode=产出模式
+elinarinfminer.gui.ore=矿石并行
+elinarinfminer.gui.fluid=流体并行
+gt.blockmachines.elinar.machine.comprehensive_mining_plant.tooltip=综合资源采集集合体\n每一并行消耗32768EU/t（LuV）\n矿石并行 64矿石/秒\n流体并行 一权重/秒\n产出模式 mod1 实时 / mod2 汇集 / mod3 结算\n放置连接个人无线网络，通过AE输出资源\n自带区块加载，服务器重启后自动恢复
+
+# ---- StructureLib 全息投影仪取料兼容（2026-10-26） ----
+structurelib.sortedregistry.inventoryproviders.6500-infinite-backpack=无尽背包
+structurelib.sortedregistry.inventoryproviders.6500-infinite-backpack.tooltip=穿在身上或放在物品栏里的无尽背包（10 页全部参与取料）
+
+# ---- 高级放射仓（2026-10-31 新增，放射性材料消耗速度 1/10000） ----
+gt.blockmachines.elinar.machine.radio_hatch_advanced.name=高级放射仓
+elinarcurios.radhatch.adv.desc.0=多方块的放射性物品输入仓（高级版）
+elinarcurios.radhatch.adv.desc.1=放射性材料清单、SV 值与辐射闸门调节与原版放射仓完全一致
+elinarcurios.radhatch.adv.desc.2=仓内放射性材料的消耗速度降为原版的 1/10000
+elinarcurios.radhatch.adv.desc.3=例：镅杆 59.9 秒 → 599,000 秒（约 166.4 小时 / 6.9 天）
+elinarcurios.radhatch.adv.desc.4=合成：9 个原版放射仓（任意电压等级）
+
+# ---- 样板总成侦测器（2026-11-07 新增：绑定样板输入总成，按有无料发红石信号） ----
+gt.blockmachines.elinar.machine.pattern_redstone_detector.name=样板总成侦测器
+elinardetector.chat.linked=已绑定到样板总成
+
+# ---- 束流倍流器（2026-11-07 新增：正面进/背面出，通量 1x~32768x） ----
+gt.blockmachines.elinar.machine.beam_flux_multiplier.name=束流倍流器
+elinarcurios.beamflux.desc.0=正面接束流管输入、背面接束流管输出（扳手点哪个面，哪个面变正面）
+elinarcurios.beamflux.desc.1=右键设置通量倍率：1x ~ 32768x（回车生效）
+elinarcurios.beamflux.desc.2=只乘通量（rate），能量/聚焦/粒子类型原样透传
+elinarcurios.beamflux.desc.3=可串联；输出通量封顶 2147483647
+elinarcurios.beamflux.desc.4=上游必须有束流输出仓，且整条束流线是一条直线

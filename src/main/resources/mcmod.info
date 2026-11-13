@@ -1,0 +1,20 @@
+[
+  {
+    "modid": "${modId}",
+    "name": "${modName}",
+    "description": "The Infinite Backpack: a fully standalone backpack with 243 storage slots, each holding up to 2147483647 items. Wear it on your back for invulnerability (Kami-style), Night Vision, and open it with a hotkey (default B). Also adds the Eternal Lunchbox, a 12-page food container whose eating protocol is built on SpiceOfLife, and the Celestial Void Energy Node, a single-block GregTech machine that buffers cable EU and flushes it into the wireless energy grid.",
+    "version": "${modVersion}",
+    "mcversion": "1.7.10",
+    "url": "",
+    "authorList": [
+      "Elinar"
+    ],
+    "credits": "Storage core derived from Avaritiaddons (MPL-2.0, WanionCane); wearing & Dragon style derived from AdventureBackpack2 (LGPL-3.0); lunchbox eating protocol derived from SpiceOfLife (squeek502).",
+    "logoFile": "",
+    "screenshots": [],
+    "dependencies": [
+      "after:gregtech",
+      "after:SpiceOfLife"
+    ]
+  }
+]
