@@ -2,7 +2,7 @@
 
 GTNH（Minecraft 1.7.10）模组，核心是**无限背包**：243 格，每格可堆 21 亿个同类物品，能背在身上用快捷键打开。
 
-原名 Infinithpackbag，v1.0.0 起更名 Elinar Curios，modId 仍为 `elinarcurios`。
+原名 Infinithpackbag，后更名 Elinar Curios（modId 仍为 `elinarcurios`）；本仓库版本号从 1.0.0 起。
 
 ## 无限背包
 
