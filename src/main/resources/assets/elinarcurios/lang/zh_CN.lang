@@ -149,3 +149,10 @@ elinarcurios.beamflux.desc.1=右键设置通量倍率：1x ~ 32768x（回车生�
 elinarcurios.beamflux.desc.2=只乘通量（rate），能量/聚焦/粒子类型原样透传
 elinarcurios.beamflux.desc.3=可串联；输出通量封顶 2147483647
 elinarcurios.beamflux.desc.4=上游必须有束流输出仓，且整条束流线是一条直线
+
+# ---- 可调式流体输入仓（2026-11-13 并入 ElinarInputHatch） ----
+gt.blockmachines.elinar.machine.input_hatch_adjustable.name=可调式流体输入仓
+elinarcurios.gui.input_hatch.capacity.title=输入仓容量上限
+elinarcurios.gui.input_hatch.capacity.label=上限
+elinarcurios.gui.input_hatch.capacity.tooltip=设置容量上限（1 ~ 2,147,483,647 L）
+elinarcurios.gui.input_hatch.capacity.current=当前：%s L（调低会销毁超出的部分）

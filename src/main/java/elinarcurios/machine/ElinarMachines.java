@@ -82,6 +82,15 @@ public final class ElinarMachines {
     /** 束流线是 ZPM 阶段内容，机器也取 ZPM 档（tier 只影响外壳颜色与扳手等级）。 */
     public static final int TIER_BEAM_FLUX_MULTIPLIER = 7;
 
+    /** 可调式流体输入仓的 ID —— 沿用独立验证版 ElinarInputHatch 的号（19083），绝不改。 */
+    public static final int ID_INPUT_HATCH_ADJUSTABLE = 19083;
+
+    /** 可调式流体输入仓的 mName；lang 键为 {@code gt.blockmachines.<mName>.name}。 */
+    public static final String NAME_INPUT_HATCH_ADJUSTABLE = "elinar.machine.input_hatch_adjustable";
+
+    /** 可调式流体输入仓取低压（LV，tier 1）—— 2026-10-20 拍板：tier 只决定外壳颜色，容量由 GUI 设。 */
+    public static final int TIER_INPUT_HATCH_ADJUSTABLE = 1;
+
     /** 样板总成侦测器的 mName；lang 键为 {@code gt.blockmachines.<mName>.name}。 */
     public static final String NAME_PATTERN_REDSTONE_DETECTOR = "elinar.machine.pattern_redstone_detector";
 
@@ -127,6 +136,7 @@ public final class ElinarMachines {
     private static IMetaTileEntity advancedRadioHatch;
     private static IMetaTileEntity patternRedstoneDetector;
     private static IMetaTileEntity beamFluxMultiplier;
+    private static IMetaTileEntity inputHatchAdjustable;
 
     private ElinarMachines() {}
 
@@ -162,6 +172,11 @@ public final class ElinarMachines {
             NAME_BEAM_FLUX_MULTIPLIER,
             "束流倍流器",
             TIER_BEAM_FLUX_MULTIPLIER);
+        inputHatchAdjustable = new MTEHatchInputAdjustable(
+            ID_INPUT_HATCH_ADJUSTABLE,
+            NAME_INPUT_HATCH_ADJUSTABLE,
+            "可调式流体输入仓",
+            TIER_INPUT_HATCH_ADJUSTABLE);
     }
 
     /** 天玄虚空能量节点的物品形态（用于配方输出）。未注册成功时返回 null。 */
@@ -201,6 +216,11 @@ public final class ElinarMachines {
         return beamFluxMultiplier;
     }
 
+    /** 可调式流体输入仓的物品形态。未注册成功时返回 null。 */
+    public static IMetaTileEntity getInputHatchAdjustable() {
+        return inputHatchAdjustable;
+    }
+
     /** 综合采掘工厂配方：8 个流体钻机 IV 围 1 个虚空采矿场 I。 */
     public static void registerRecipes() {
         net.minecraft.item.ItemStack voidMiner = null;
@@ -231,5 +251,8 @@ public final class ElinarMachines {
 
         // 束流倍流器：4 束流管 + 4 ZPM 机壳 + 1 ZPM 发射器（默认方案，2026-11-07）。
         elinarcurios.recipe.BeamFluxMultiplierRecipes.register();
+
+        // 可调式流体输入仓：9 个原版输入仓（任意电压）→ 1 个。
+        elinarcurios.recipe.AdjustableInputHatchRecipes.register();
     }
 }
