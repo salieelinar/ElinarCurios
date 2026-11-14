@@ -108,6 +108,6 @@ gradlew.bat spotlessApply build
 
 - 无限箱存储核心改编自 Avaritiaddons（MPL-2.0）
 - 穿戴系统与皮肤改编自 AdventureBackpack2（LGPL-3.0）
-- 详见 `NOTICE` 与 `LICENSE-*.txt`
+- 详见 `LICENSES/`（`NOTICE` + 三份许可证全文）
 
 实现细节见 `DEV_GUIDE.md`，菲涅尔透镜的交付说明见 `FRESNEL_LENS.md`。

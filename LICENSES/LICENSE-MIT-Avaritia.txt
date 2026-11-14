@@ -23,6 +23,6 @@ THE SOFTWARE.
 ---
 
 This license applies to the adapted rainbow-text helper
-(infinithpackbag.util.FabulousText), originally from Avaritia's
+(elinarcurios.util.FabulousText), originally from Avaritia's
 LudicrousText.makeFabulous. All other code in this project is governed by
-LICENSE-LGPL3.txt unless noted otherwise in NOTICE.
+LICENSES/LICENSE-LGPL3.txt unless noted otherwise in LICENSES/NOTICE.
