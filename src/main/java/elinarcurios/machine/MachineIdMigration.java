@@ -82,6 +82,10 @@ public final class MachineIdMigration {
     private static int worldTickCounter;
     private static int playerTickCounter;
 
+    /** 已经警告过的“旧号锁死机器”（弱引用，避免长期占内存）。 */
+    private static final java.util.Set<TileEntity> LOCKED_WARNED = java.util.Collections
+        .newSetFromMap(new java.util.WeakHashMap<TileEntity, Boolean>());
+
     private MachineIdMigration() {}
 
     /** 迁移统计，供命令输出。 */
@@ -197,8 +201,12 @@ public final class MachineIdMigration {
      * 正常路径只调用 {@code setMetaTileID(short)} 改 TE 的号：<b>不重建 MTE 实例</b>，
      * 所以 AE2 的 GridNode / 合成任务 / 第三方静态缓存里对 MTE 实例的引用全部继续有效
      * （重建会让旧实例的 base 置空，之后 AE 网络一变动就 NPE，2026-11-14 实测）。
-     * 只有已经锁死（没有 MTE 实例）的 TE 才走 {@code writeToNBT} + {@code setInitialValuesAsNBT}
-     * 重建一次，把它救回来。
+     *
+     * <p>
+     * v1.0.0c3 起旧号不再注册，所以旧号机器在加载时就已经是“锁死”状态（没有 MTE 实例）。
+     * 这种机器<b>不在这里重建</b>：它的库存很可能在锁死后的第一次存盘就没了，重建只会把
+     * “丢数据”坐实，还会让 {@code idcheck} 看起来一切正常。正确做法是记一条警告、让
+     * {@code /Elinar idcheck} 把它列出来，用户装回 v1.0.0c2a 迁移即可。
      */
     public static boolean migrateTile(TileEntity te, Stats stats) {
         if (!(te instanceof IGregTechTileEntity) || !(te instanceof BaseMetaTileEntity)) return false;
@@ -206,18 +214,26 @@ public final class MachineIdMigration {
         final Integer newId = ElinarMachines.ID_MAP.get(gt.getMetaTileID());
         if (newId == null) return false;
         final BaseMetaTileEntity base = (BaseMetaTileEntity) te;
-        final boolean wasLocked = base.getMetaTileEntity() == null;
-        try {
-            if (wasLocked) {
-                // 锁死机器没有实例可保留，只能按新号重建（它的库存很可能在之前存盘时已经丢了）。
-                final NBTTagCompound nbt = new NBTTagCompound();
-                base.writeToNBT(nbt);
-                nbt.setInteger("mID", newId.intValue());
-                base.setInitialValuesAsNBT(nbt, (short) newId.intValue());
-            } else {
-                // 只改号、不换实例：AE 节点 / 静态注册表引用全部保持有效。
-                base.setMetaTileID((short) newId.intValue());
+        if (base.getMetaTileEntity() == null) {
+            // 锁死机器：旧号已不注册，重建会丢库存且掩盖问题 —— 只统计 + 记一次警告。
+            if (stats != null) stats.tilesLocked++;
+            if (!LOCKED_WARNED.contains(base)) {
+                LOCKED_WARNED.add(base);
+                cpw.mods.fml.common.FMLLog.warning(
+                    "[ElinarCurios] 旧号机器处于锁死状态 @" + base.xCoord
+                        + "/"
+                        + base.yCoord
+                        + "/"
+                        + base.zCoord
+                        + "（旧 mID="
+                        + gt.getMetaTileID()
+                        + "）。请装回 v1.0.0c2a 迁移后再换回本版。");
             }
+            return false;
+        }
+        try {
+            // 只改号、不换实例：AE 节点 / 静态注册表引用全部保持有效。
+            base.setMetaTileID((short) newId.intValue());
             base.markDirty();
         } catch (Throwable t) {
             // 单台失败不能拖垮整个迁移：记进日志，继续下一台。
@@ -227,10 +243,7 @@ public final class MachineIdMigration {
         }
         final World world = base.getWorld();
         if (world != null) world.markBlockForUpdate(base.xCoord, base.yCoord, base.zCoord);
-        if (stats != null) {
-            stats.tilesMigrated++;
-            if (wasLocked) stats.tilesLocked++;
-        }
+        if (stats != null) stats.tilesMigrated++;
         reRegisterLoadedInstance(base);
         fixTileInventories(te, stats);
         return true;

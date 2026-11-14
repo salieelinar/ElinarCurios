@@ -319,21 +319,21 @@ public class CommandElinar implements ICommand {
     }
 
     // ------------------------------------------------------------------
-    // /Elinar idmigrate —— 把存档里旧号段的机器搬到 23100-23112
+    // /Elinar idmigrate —— 修旧号物品（c3 只注册 23100-23112；旧号仅作识别）
     // ------------------------------------------------------------------
 
     private void machineIdMigrate(ICommandSender sender) {
-        send(sender, EnumChatFormatting.GOLD + "===== MTE 号段迁移（19082-19104 / 32030 → 23100-23112）=====");
+        send(sender, EnumChatFormatting.GOLD + "===== 旧号物品修正（本版只注册 23100-23112）=====");
         send(sender, EnumChatFormatting.GRAY + "扫描已加载的机器方块 / 机器物品 / 玩家背包 / 掉落物……");
         final elinarcurios.machine.MachineIdMigration.Stats stats = elinarcurios.machine.MachineIdMigration
             .migrateAll();
         send(
             sender,
-            EnumChatFormatting.GREEN + "完成：迁移机器 "
-                + stats.tilesMigrated
-                + " 台 / 修正物品 "
+            EnumChatFormatting.GREEN + "完成：修正物品 "
                 + stats.stacksFixed
-                + " 个 / 扫描世界 "
+                + " 个 / 迁移机器 "
+                + stats.tilesMigrated
+                + " 台 / 扫描世界 "
                 + stats.worldsScanned
                 + " 个 / 玩家 "
                 + stats.playersScanned
@@ -341,13 +341,12 @@ public class CommandElinar implements ICommand {
         if (stats.tilesLocked > 0) {
             send(
                 sender,
-                EnumChatFormatting.RED + "其中 " + stats.tilesLocked + " 台在迁移前已经是「锁死」状态（旧号没注册过），它们的库存可能已经丢过一次，建议去坐标确认一下");
+                EnumChatFormatting.RED + "发现 "
+                    + stats.tilesLocked
+                    + " 台旧号机器已经处于锁死状态（旧号在本版不注册）。它们不会在这里自动救活："
+                    + "请装回 v1.0.0c2a 跑一次迁移，再换回本版。");
         }
-        send(
-            sender,
-            EnumChatFormatting.DARK_GRAY + "未加载区块会在加载时自动迁移（每 5 秒兜底扫一遍）；AE 存储单元里的机器物品不会自动迁移——"
-                + "请把它们取到背包/箱子里（取出时会被自动改成新号），或迁移前先取出来。");
-        send(sender, EnumChatFormatting.DARK_GRAY + "全部迁完后建议存盘退出再重启一次（让按 UUID 登记的静态表重建）。");
+        send(sender, EnumChatFormatting.DARK_GRAY + "物品侧：背包/箱子/机器库存/掉落物会自动修正；AE 存储单元里的旧号物品" + "请在取出时自动修正，或手动取出后跑本命令。");
     }
 
     // ------------------------------------------------------------------
@@ -365,7 +364,7 @@ public class CommandElinar implements ICommand {
         for (int i = 0; i < Math.min(20, issues.size()); i++) {
             send(sender, EnumChatFormatting.GRAY + issues.get(i));
         }
-        send(sender, EnumChatFormatting.YELLOW + "再执行一次 /Elinar idmigrate，或去对应坐标附近让区块加载后自动迁移。");
+        send(sender, EnumChatFormatting.YELLOW + "这些机器在本版（c3）里已锁死：装回 v1.0.0c2a 跑一次 /Elinar idmigrate，" + "再换回本版即可。");
     }
 
     // ------------------------------------------------------------------
@@ -396,9 +395,10 @@ public class CommandElinar implements ICommand {
         send(sender, EnumChatFormatting.DARK_GRAY + "  立即生效；并把该档写回 config 作为新机器的默认档");
         send(sender, EnumChatFormatting.YELLOW + "/Elinar meflush" + EnumChatFormatting.GRAY + " —— 查看 ME 输出快刷状态");
         send(sender, EnumChatFormatting.DARK_GRAY + "  玩家下单期间，输出总线(ME)/输出仓(ME) 改为每 tick 刷，停机 5 秒后恢复 2 秒");
-        send(sender, EnumChatFormatting.YELLOW + "/Elinar idmigrate" + EnumChatFormatting.GRAY + " —— 把旧号机器搬到新号段");
-        send(sender, EnumChatFormatting.DARK_GRAY + "  19082-19104 / 32030 → 23100-23112（v1.0.0c2 过渡版专用，只用一次）");
-        send(sender, EnumChatFormatting.YELLOW + "/Elinar idcheck" + EnumChatFormatting.GRAY + " —— 检查旧号残留");
+        send(sender, EnumChatFormatting.YELLOW + "/Elinar idmigrate" + EnumChatFormatting.GRAY + " —— 修正旧号机器物品");
+        send(sender, EnumChatFormatting.DARK_GRAY + "  本版只注册 23100-23112；旧号物品（背包/箱子/掉落物）会改成新号");
+        send(sender, EnumChatFormatting.DARK_GRAY + "  若报「旧号机器已锁死」：装回 v1.0.0c2a 迁移，再换回本版");
+        send(sender, EnumChatFormatting.YELLOW + "/Elinar idcheck" + EnumChatFormatting.GRAY + " —— 检查旧号残留（机器坐标）");
         send(sender, EnumChatFormatting.YELLOW + "/Elinar help" + EnumChatFormatting.GRAY + " —— 显示本帮助");
     }
 
