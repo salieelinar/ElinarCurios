@@ -5,7 +5,7 @@ This project contains code derived from two open-source mods:
 
 1. Avaritiaddons (https://github.com/GTNewHorizons/Avaritiaddons)
    - Author: WanionCane
-   - License: Mozilla Public License 2.0 (see LICENSE-MPL2.txt)
+   - License: Mozilla Public License 2.0 (see LICENSES/LICENSE-MPL2.txt)
    - Derived parts: the Infinity Chest storage core (InventoryAvaritiaddonsChest,
      TileEntityInfinityChest storage/NBT logic), ContainerInfinityChest,
      GuiInfinityChest/GuiAvaritiaddonsChest (GUI layout & click handling),
@@ -15,7 +15,7 @@ This project contains code derived from two open-source mods:
 
 2. AdventureBackpack2 (https://github.com/GTNewHorizons/AdventureBackpack2)
    - Upstream: Adventure Backpack by darkona (LGPL-3.0)
-   - License: GNU Lesser General Public License v3 (see LICENSE-LGPL3.txt)
+   - License: GNU Lesser General Public License v3 (see LICENSES/LICENSE-LGPL3.txt)
    - Derived parts: the wearable back-slot property model (BackpackProperty),
      equip/unequip flow (BackpackUtils), the Dragon backpack passive effects
      (BackpackAbilities.itemDragon / BackpackRemovals.itemDragon) and the
@@ -25,9 +25,9 @@ This project contains code derived from two open-source mods:
 
 3. Avaritia (https://github.com/GTNewHorizons/Avaritia)
    - Author: Spiteful Fox
-   - License: MIT (Copyright (c) 2015-2018 Spiteful Fox, see LICENSE-MIT-Avaritia.txt)
+   - License: MIT (Copyright (c) 2015-2018 Spiteful Fox, see LICENSES/LICENSE-MIT-Avaritia.txt)
    - Derived part: the rainbow-animated text helper (LudicrousText.makeFabulous,
      adapted into elinarcurios.util.FabulousText).
 
 The remaining code is original to this project and is provided under the
-GNU Lesser General Public License v3 (see LICENSE-LGPL3.txt).
+GNU Lesser General Public License v3 (see LICENSES/LICENSE-LGPL3.txt).

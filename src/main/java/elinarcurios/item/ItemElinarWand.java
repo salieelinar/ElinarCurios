@@ -28,7 +28,7 @@ import thaumcraft.common.items.wands.ItemWandCasting;
  * - tooltip 烫金「寰宇之力 握于掌心」。
  *
  * 先例:ThaumicHorizons 的 ItemWandCastingDisposable 同款继承方案;
- * 纹理照搬 Avaritia 的水晶缠绕杖(wand_rod_neutronium / wand_cap_crystal,见 LICENSE-MIT-Avaritia.txt)。
+ * 纹理照搬 Avaritia 的水晶缠绕杖(wand_rod_neutronium / wand_cap_crystal,见 LICENSES/LICENSE-MIT-Avaritia.txt)。
  */
 public class ItemElinarWand extends ItemWandCasting {
 

@@ -114,7 +114,7 @@ src/main/resources/
 │   └── textures/models/dragonBackpack.png  # 背部 Dragon 皮肤(复制自 AB2,LGPL)
 ```
 
-根目录:`build.gradle`(GTNHGradle 约定插件)、`gradle.properties`(modId/modGroup 等)、`dependencies.gradle`(空)、`repositories.gradle`(空)、`settings.gradle`(gtnhsettingsconvention 2.0.29)、`LICENSE-LGPL3.txt`、`LICENSE-MPL2.txt`、`NOTICE`。
+根目录:`build.gradle`(GTNHGradle 约定插件)、`gradle.properties`(modId/modGroup 等)、`dependencies.gradle`(空)、`repositories.gradle`(空)、`settings.gradle`(gtnhsettingsconvention 2.0.29)、`LICENSES/`(LGPL-3.0 / MPL-2.0 / MIT 许可证全文与 NOTICE)。
 
 ---
 
@@ -319,7 +319,7 @@ elinarcurios (compound)
 ### 5.13 TC 软联动:天玄之杖(2026-08 新增,已提交 fdebc62)
 - **定位**:新手友好的大容量 TC 法杖,无作弊。rod/cap tag 均 `"elinar"`;**显示名自定义**为「天玄之杖」(override `getItemStackDisplayName`,不走 TC 的 cap+rod+法杖拼接),带 **FabulousText 彩虹渐变动画**(无尽背包同款,服务端返回静态文本);tooltip 烫金「寰宇之力 握于掌心」(`§6§o`)。
 - **设计**:capacity = 1000 万(内部 ×100 = 10 亿 vis,int 不溢出);**不挂 IWandRodOnUpdate**(无自动回满);新杖 NBT 无 vis 键 → 到手 vis=0,充能台吸多少用多少;**无合成配方(2026-08 删除,与图腾/背包一致走任务书/奖励发放)**。
-- **实现**:`elinarcurios/compat/ThaumcraftCompat.java` + `elinarcurios/item/ItemElinarWand.java`(extends `ItemWandCasting`,注册为 elinarcurios 自己的物品,创造标签/NEI 可见 —— 因为 **TC 的 getSubItems 是硬编码枚举,自定义 rod/cap 组合不会出现在 TC 物品列表**,复用 TC 物品做变体的话 NEI 物品搜索找不到,只有配方输出能索引;先例:ThaumicHorizons ItemWandCastingDisposable);**纹理照搬 Avaritia 水晶缠绕杖**(wand_rod_neutronium / wand_cap_crystal → wand_rod/cap_elinar.png,许可证 LICENSE-MIT-Avaritia.txt)。
+- **实现**:`elinarcurios/compat/ThaumcraftCompat.java` + `elinarcurios/item/ItemElinarWand.java`(extends `ItemWandCasting`,注册为 elinarcurios 自己的物品,创造标签/NEI 可见 —— 因为 **TC 的 getSubItems 是硬编码枚举,自定义 rod/cap 组合不会出现在 TC 物品列表**,复用 TC 物品做变体的话 NEI 物品搜索找不到,只有配方输出能索引;先例:ThaumicHorizons ItemWandCastingDisposable);**纹理照搬 Avaritia 水晶缠绕杖**(wand_rod_neutronium / wand_cap_crystal → wand_rod/cap_elinar.png,许可证 LICENSES/LICENSE-MIT-Avaritia.txt)。
 - **依赖**:`dependencies.gradle` 加 `implementation('thaumcraft:Thaumcraft:1.7.10-4.2.3.5:dev') { transitive = false }` + `runtimeOnly('com.github.GTNewHorizons:Baubles-Expanded:2.2.21-GTNH:dev') { transitive = false }`(官方 TC 联动 mod 标准配法:implementation 只进 dev classpath,发布 jar 不含 TC;dev 环境跑 runServer 必须带 Baubles,否则 TC 自带 DepLoader 会去失效的 dropbox 链接下载它);运行时 `Loader.isModLoaded("Thaumcraft")` 防御,无 TC 时跳过注册、mod 不崩(GTNH 整合包必有 TC,实际等效强依赖)。
 - **坑(从 javap 反汇编验证)**:
   0. **软联动防御必须在调用处守卫,不能只在 compat 类内部判断**(2026-08 虚界百宝箱冒烟测试暴露):`ThaumcraftCompat` 的字段/方法引用 TC 类型(`WandRod`/`ItemElinarWand`),JVM 加载该类本身就要解析它们——`CommonProxy.preInit` 无条件调 `ThaumcraftCompat.init()` 时,无 TC 环境在**类加载阶段**就 `NoClassDefFoundError: thaumcraft.common.items.wands.ItemWandCasting`(isAvailable() 方法体根本没机会执行)。修法:`if (Loader.isModLoaded("Thaumcraft")) { ThaumcraftCompat.init(); ... }` 把守卫放在调用点,TC 不存在时整个类都不加载。
@@ -771,7 +771,7 @@ GTNL 的 `ECraftingCPUCluster` 都 `extends CraftingCPUCluster`**、走同一个
 
 ## 7. 许可证
 
-- 本项目整体按 **LGPL-3.0** 分发(`LICENSE-LGPL3.txt`);
-- 移植自 Avaritiaddons 的部分保留 **MPL-2.0** 文件署名(`LICENSE-MPL2.txt`、源文件头注释);
-- Dragon 皮肤纹理与穿戴/渲染思路来自 AdventureBackpack2(LGPL-3.0),已在 `NOTICE` 声明;
+- 本项目整体按 **LGPL-3.0** 分发(`LICENSES/LICENSE-LGPL3.txt`);
+- 移植自 Avaritiaddons 的部分保留 **MPL-2.0** 文件署名(`LICENSES/LICENSE-MPL2.txt`、源文件头注释);
+- Dragon 皮肤纹理与穿戴/渲染思路来自 AdventureBackpack2(LGPL-3.0),已在 `LICENSES/NOTICE` 声明;
 - 修改时请保留文件头的版权注释。
