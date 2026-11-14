@@ -29,7 +29,7 @@ import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
  */
 public class CommandElinar implements ICommand {
 
-    private static final String USAGE = "/Elinar <infiore|setore|help>";
+    private static final String USAGE = "/Elinar <infiore|setore|meflush|idmigrate|idcheck|help>";
 
     @Override
     public String getCommandName() {
@@ -64,6 +64,14 @@ public class CommandElinar implements ICommand {
         }
         if ("meflush".equals(sub)) {
             meFlushStatus(sender);
+            return;
+        }
+        if ("idmigrate".equals(sub)) {
+            machineIdMigrate(sender);
+            return;
+        }
+        if ("idcheck".equals(sub)) {
+            machineIdCheck(sender);
             return;
         }
         if ("help".equals(sub) || "?".equals(sub)) {
@@ -311,6 +319,56 @@ public class CommandElinar implements ICommand {
     }
 
     // ------------------------------------------------------------------
+    // /Elinar idmigrate —— 把存档里旧号段的机器搬到 23100-23112
+    // ------------------------------------------------------------------
+
+    private void machineIdMigrate(ICommandSender sender) {
+        send(sender, EnumChatFormatting.GOLD + "===== MTE 号段迁移（19082-19104 / 32030 → 23100-23112）=====");
+        send(sender, EnumChatFormatting.GRAY + "扫描已加载的机器方块 / 机器物品 / 玩家背包 / 掉落物……");
+        final elinarcurios.machine.MachineIdMigration.Stats stats = elinarcurios.machine.MachineIdMigration
+            .migrateAll();
+        send(
+            sender,
+            EnumChatFormatting.GREEN + "完成：迁移机器 "
+                + stats.tilesMigrated
+                + " 台 / 修正物品 "
+                + stats.stacksFixed
+                + " 个 / 扫描世界 "
+                + stats.worldsScanned
+                + " 个 / 玩家 "
+                + stats.playersScanned
+                + " 名");
+        if (stats.tilesLocked > 0) {
+            send(
+                sender,
+                EnumChatFormatting.RED + "其中 " + stats.tilesLocked + " 台在迁移前已经是「锁死」状态（旧号没注册过），它们的库存可能已经丢过一次，建议去坐标确认一下");
+        }
+        send(
+            sender,
+            EnumChatFormatting.DARK_GRAY + "未加载区块会在加载时自动迁移（每 5 秒兜底扫一遍）；AE 存储单元里的机器物品不会自动迁移——"
+                + "请把它们取到背包/箱子里（取出时会被自动改成新号），或迁移前先取出来。");
+        send(sender, EnumChatFormatting.DARK_GRAY + "全部迁完后建议存盘退出再重启一次（让按 UUID 登记的静态表重建）。");
+    }
+
+    // ------------------------------------------------------------------
+    // /Elinar idcheck —— 检查还有没有旧号残留
+    // ------------------------------------------------------------------
+
+    private void machineIdCheck(ICommandSender sender) {
+        final java.util.List<String> issues = elinarcurios.machine.MachineIdMigration.checkAll();
+        if (issues.isEmpty()) {
+            send(sender, EnumChatFormatting.GREEN + "没有检测到旧号残留（只统计已加载区块里的机器方块）");
+            send(sender, EnumChatFormatting.DARK_GRAY + "物品残留靠背包/容器自动修正；离线的区块请去走一圈再查一次。");
+            return;
+        }
+        send(sender, EnumChatFormatting.RED + "还有 " + issues.size() + " 台机器是旧号（前 20 条）：");
+        for (int i = 0; i < Math.min(20, issues.size()); i++) {
+            send(sender, EnumChatFormatting.GRAY + issues.get(i));
+        }
+        send(sender, EnumChatFormatting.YELLOW + "再执行一次 /Elinar idmigrate，或去对应坐标附近让区块加载后自动迁移。");
+    }
+
+    // ------------------------------------------------------------------
     // /Elinar help
     // ------------------------------------------------------------------
 
@@ -338,6 +396,9 @@ public class CommandElinar implements ICommand {
         send(sender, EnumChatFormatting.DARK_GRAY + "  立即生效；并把该档写回 config 作为新机器的默认档");
         send(sender, EnumChatFormatting.YELLOW + "/Elinar meflush" + EnumChatFormatting.GRAY + " —— 查看 ME 输出快刷状态");
         send(sender, EnumChatFormatting.DARK_GRAY + "  玩家下单期间，输出总线(ME)/输出仓(ME) 改为每 tick 刷，停机 5 秒后恢复 2 秒");
+        send(sender, EnumChatFormatting.YELLOW + "/Elinar idmigrate" + EnumChatFormatting.GRAY + " —— 把旧号机器搬到新号段");
+        send(sender, EnumChatFormatting.DARK_GRAY + "  19082-19104 / 32030 → 23100-23112（v1.0.0c2 过渡版专用，只用一次）");
+        send(sender, EnumChatFormatting.YELLOW + "/Elinar idcheck" + EnumChatFormatting.GRAY + " —— 检查旧号残留");
         send(sender, EnumChatFormatting.YELLOW + "/Elinar help" + EnumChatFormatting.GRAY + " —— 显示本帮助");
     }
 
@@ -366,6 +427,8 @@ public class CommandElinar implements ICommand {
             options.add("infiore");
             options.add("setore");
             options.add("meflush");
+            options.add("idmigrate");
+            options.add("idcheck");
             options.add("help");
             return options;
         }

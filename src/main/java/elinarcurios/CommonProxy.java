@@ -82,6 +82,12 @@ public class CommonProxy {
         // 依赖已提升为硬依赖,不再考虑无 GT 环境下的类加载隔离。
         if (Loader.isModLoaded("gregtech")) {
             ElinarMachines.register();
+            // 号段迁移（v1.0.0c2 过渡版）：区块加载时迁移旧号机器，世界/玩家 tick 兜底修正物品。
+            // ChunkEvent 是 Forge 事件；TickEvent 是 FML 事件，同一个类两个总线都要挂。
+            MinecraftForge.EVENT_BUS.register(elinarcurios.machine.MachineIdMigration.class);
+            FMLCommonHandler.instance()
+                .bus()
+                .register(elinarcurios.machine.MachineIdMigration.class);
             // 束流虚空存储器用 UUID 找"已加载实例"：世界卸载时把该世界的条目摘掉，防死引用。
             MinecraftForge.EVENT_BUS.register(new elinarcurios.machine.BeamVoidRegistryHandler());
             // 综合采掘工厂的 1×1 世界锚：Forge 票据由本 mod 自己持久化 / 重启后恢复，

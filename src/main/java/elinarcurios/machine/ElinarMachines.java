@@ -164,6 +164,65 @@ public final class ElinarMachines {
     /** 装配线是 LuV+ 的机器，镜像统一取 IV 档（tier 6）—— 覆盖绝大多数装配线配方，且不吃满档贴图。 */
     public static final int TIER_MIRROR = 6;
 
+    /** 旧号 → 新号（迁移命令与 idcheck 共用；顺序即阅读顺序）。 */
+    public static final java.util.Map<Integer, Integer> ID_MAP;
+
+    // ------------------------------------------------------------------
+    // v1.0.0c2 过渡版：新号段 23100-23112（2026-11-14 与 TST 0.8.1 撞号后整段搬迁）
+    // ------------------------------------------------------------------
+
+    /**
+     * 新号段起点。23100-23199 是 2026-11-14 实测为空的号段（GT5U 在 20000-27999 一个号都没有，
+     * 见 {@code D:\Agent\GTNH\ref\mte-id-map-2026-11-14.md}），芷若拍板整段搬过去。
+     *
+     * <p>
+     * 过渡版（v1.0.0c2）里新旧号<b>同时注册</b>：旧号保证老存档的机器照常加载，新号供
+     * {@code /Elinar idmigrate} 迁移；正式版（v1.0.0c3 起）只留新号。
+     */
+    public static final int ID_VOID_NODE_NEW = 23100;
+
+    public static final int ID_INPUT_HATCH_ADJUSTABLE_NEW = 23101;
+
+    public static final int ID_COMPREHENSIVE_MINING_PLANT_NEW = 23102;
+
+    public static final int ID_PATTERN_REDSTONE_DETECTOR_NEW = 23103;
+
+    public static final int ID_BEAM_FLUX_MULTIPLIER_NEW = 23104;
+
+    public static final int ID_BEAM_VOID_INPUT_HATCH_NEW = 23105;
+
+    public static final int ID_BEAM_VOID_STORAGE_NEW = 23106;
+
+    public static final int ID_BEAM_VOID_OUTPUT_HATCH_NEW = 23107;
+
+    public static final int ID_BEAM_VOID_INPUT_CHAMBER_NEW = 23108;
+
+    public static final int ID_MIRROR_ITEM_NEW = 23109;
+
+    public static final int ID_MIRROR_FLUID_NEW = 23110;
+
+    public static final int ID_ADVANCED_RADIO_HATCH_NEW = 23111;
+
+    public static final int ID_HIGH_TIER_ASSEMBLY_LINE_NEW = 23112;
+
+    static {
+        final java.util.Map<Integer, Integer> map = new java.util.LinkedHashMap<>();
+        map.put(ID_VOID_NODE, ID_VOID_NODE_NEW);
+        map.put(ID_INPUT_HATCH_ADJUSTABLE, ID_INPUT_HATCH_ADJUSTABLE_NEW);
+        map.put(ID_COMPREHENSIVE_MINING_PLANT, ID_COMPREHENSIVE_MINING_PLANT_NEW);
+        map.put(ID_PATTERN_REDSTONE_DETECTOR, ID_PATTERN_REDSTONE_DETECTOR_NEW);
+        map.put(ID_BEAM_FLUX_MULTIPLIER, ID_BEAM_FLUX_MULTIPLIER_NEW);
+        map.put(ID_BEAM_VOID_INPUT_HATCH, ID_BEAM_VOID_INPUT_HATCH_NEW);
+        map.put(ID_BEAM_VOID_STORAGE, ID_BEAM_VOID_STORAGE_NEW);
+        map.put(ID_BEAM_VOID_OUTPUT_HATCH, ID_BEAM_VOID_OUTPUT_HATCH_NEW);
+        map.put(ID_BEAM_VOID_INPUT_CHAMBER, ID_BEAM_VOID_INPUT_CHAMBER_NEW);
+        map.put(ID_MIRROR_ITEM, ID_MIRROR_ITEM_NEW);
+        map.put(ID_MIRROR_FLUID, ID_MIRROR_FLUID_NEW);
+        map.put(ID_ADVANCED_RADIO_HATCH, ID_ADVANCED_RADIO_HATCH_NEW);
+        map.put(ID_HIGH_TIER_ASSEMBLY_LINE, ID_HIGH_TIER_ASSEMBLY_LINE_NEW);
+        ID_MAP = java.util.Collections.unmodifiableMap(map);
+    }
+
     private static IMetaTileEntity voidNode;
     private static IMetaTileEntity mirrorItem;
     private static IMetaTileEntity mirrorFluid;
@@ -234,6 +293,63 @@ public final class ElinarMachines {
             TIER_BEAM_VOID_OUTPUT_HATCH);
         beamVoidInputChamber = new MTEBeamVoidInputChamber(
             ID_BEAM_VOID_INPUT_CHAMBER,
+            NAME_BEAM_VOID_INPUT_CHAMBER,
+            "束流虚空输入室",
+            TIER_BEAM_VOID_INPUT_CHAMBER);
+
+        registerMigrationAliases();
+    }
+
+    /**
+     * v1.0.0c2 过渡版：同一批 MTE 类在新号段上再注册一份。
+     *
+     * <p>
+     * 实例由 GT 的 {@code GregTechAPI.METATILEENTITIES} 表持有，这里不需要留引用。旧号仍然注册着，
+     * 所以迁移过程中旧机器可以照常加载；迁移命令只是把存档里的 {@code mID}（和物品 damage）
+     * 改到新号上。
+     *
+     * <p>
+     * c3 起删掉本方法、把上面 {@code register()} 里的旧号换成 {@code *_NEW} 常量即可。
+     */
+    private static void registerMigrationAliases() {
+        new MTECelestinullVoidNode(ID_VOID_NODE_NEW, "celestinull", "天玄虚空能量节点", 14);
+        new MTEHatchPatternMirrorItem(ID_MIRROR_ITEM_NEW, NAME_MIRROR_ITEM, "物品总成镜像", TIER_MIRROR);
+        new MTEHatchPatternMirrorFluid(ID_MIRROR_FLUID_NEW, NAME_MIRROR_FLUID, "流体总成镜像", TIER_MIRROR);
+        new MTEComprehensiveMiningPlant(ID_COMPREHENSIVE_MINING_PLANT_NEW, NAME_COMPREHENSIVE_MINING_PLANT, "综合采掘工厂");
+        new MTEHighTierAssemblyLine(ID_HIGH_TIER_ASSEMBLY_LINE_NEW, NAME_HIGH_TIER_ASSEMBLY_LINE, "高级装配线");
+        new MTEAdvancedRadioHatch(
+            ID_ADVANCED_RADIO_HATCH_NEW,
+            NAME_ADVANCED_RADIO_HATCH,
+            "高级放射仓",
+            TIER_ADVANCED_RADIO_HATCH);
+        new MTEPatternRedstoneDetector(
+            ID_PATTERN_REDSTONE_DETECTOR_NEW,
+            NAME_PATTERN_REDSTONE_DETECTOR,
+            "样板总成侦测器",
+            TIER_PATTERN_REDSTONE_DETECTOR);
+        new MTEBeamFluxMultiplier(
+            ID_BEAM_FLUX_MULTIPLIER_NEW,
+            NAME_BEAM_FLUX_MULTIPLIER,
+            "束流倍流器",
+            TIER_BEAM_FLUX_MULTIPLIER);
+        new MTEHatchInputAdjustable(
+            ID_INPUT_HATCH_ADJUSTABLE_NEW,
+            NAME_INPUT_HATCH_ADJUSTABLE,
+            "可调式流体输入仓",
+            TIER_INPUT_HATCH_ADJUSTABLE);
+        new MTEHatchBeamVoidInput(
+            ID_BEAM_VOID_INPUT_HATCH_NEW,
+            NAME_BEAM_VOID_INPUT_HATCH,
+            "束流虚空输入仓",
+            TIER_BEAM_VOID_INPUT_HATCH);
+        new MTEBeamVoidStorage(ID_BEAM_VOID_STORAGE_NEW, NAME_BEAM_VOID_STORAGE, "束流虚空存储器", TIER_BEAM_VOID_STORAGE);
+        new MTEHatchBeamVoidOutput(
+            ID_BEAM_VOID_OUTPUT_HATCH_NEW,
+            NAME_BEAM_VOID_OUTPUT_HATCH,
+            "束流虚空输出仓",
+            TIER_BEAM_VOID_OUTPUT_HATCH);
+        new MTEBeamVoidInputChamber(
+            ID_BEAM_VOID_INPUT_CHAMBER_NEW,
             NAME_BEAM_VOID_INPUT_CHAMBER,
             "束流虚空输入室",
             TIER_BEAM_VOID_INPUT_CHAMBER);
