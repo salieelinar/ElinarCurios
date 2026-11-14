@@ -46,6 +46,21 @@ import gregtech.api.metatileentity.BaseMetaTileEntity;
  * {@code saveMetaTileNBT} 不会写 Inventory —— 库存与机器数据就真丢了。
  *
  * <p>
+ * <b>★ 换号只改 TE 的 {@code mID}，绝不重建 MTE 实例（2026-11-14 实测教训）</b>：
+ * 早期实现用 {@code setInitialValuesAsNBT} 重建实例，重建时 GT 会把旧实例的
+ * {@code baseMetaTileEntity} 置空，而 AE2 的 {@code GridNode}（持有 {@code IGridHost} =
+ * MTE 实例）、GTNL 无线频道缓存等外部引用还指着旧实例 —— 网络一变更就
+ * {@code NullPointerException: ... "base" is null}（实际崩溃现场：综合采掘工厂
+ * {@code getLocation} → {@code AENetworkProxy.getLocation} → {@code Grid.add}）。
+ * 现在改为 {@code BaseMetaTileEntity.setMetaTileID(short)}：实例、AE 节点、各种静态表引用
+ * 全部原地保留；而 {@code getStackForm()} / {@code getDrops()} / 存盘读的都是
+ * {@code getMetaTileID()}，所以立刻就是新号。
+ *
+ * <p>
+ * 只有已经锁死（{@code getMetaTileEntity() == null}）的 TE 才走重建路径 —— 那种机器
+ * 本来就没有实例可保留，AE 侧也不存在有效引用。
+ *
+ * <p>
  * 不处理的范围：AE2 存储单元（{@code AEItemStack} 是二进制序列化，改不了 NBT），
  * 迁移前请把 AE 里的机器方块取出来放在箱子/背包里，或者迁移后再取出来（取出时会被
  * {@link #onPlayerTick} 自动改正）。
@@ -179,8 +194,11 @@ public final class MachineIdMigration {
      * 把一台旧号机器就地迁到新号；返回是否真的迁移了。
      *
      * <p>
-     * 用 {@code writeToNBT} + {@code setInitialValuesAsNBT(nbt, newId)} 做一次完整的状态往返：
-     * GT 会把库存、能量、覆盖板、朝向、owner 以及机器自己的 NBT 全部重新读进新实例。
+     * 正常路径只调用 {@code setMetaTileID(short)} 改 TE 的号：<b>不重建 MTE 实例</b>，
+     * 所以 AE2 的 GridNode / 合成任务 / 第三方静态缓存里对 MTE 实例的引用全部继续有效
+     * （重建会让旧实例的 base 置空，之后 AE 网络一变动就 NPE，2026-11-14 实测）。
+     * 只有已经锁死（没有 MTE 实例）的 TE 才走 {@code writeToNBT} + {@code setInitialValuesAsNBT}
+     * 重建一次，把它救回来。
      */
     public static boolean migrateTile(TileEntity te, Stats stats) {
         if (!(te instanceof IGregTechTileEntity) || !(te instanceof BaseMetaTileEntity)) return false;
@@ -189,11 +207,17 @@ public final class MachineIdMigration {
         if (newId == null) return false;
         final BaseMetaTileEntity base = (BaseMetaTileEntity) te;
         final boolean wasLocked = base.getMetaTileEntity() == null;
-        final NBTTagCompound nbt = new NBTTagCompound();
         try {
-            base.writeToNBT(nbt);
-            nbt.setInteger("mID", newId.intValue());
-            base.setInitialValuesAsNBT(nbt, (short) newId.intValue());
+            if (wasLocked) {
+                // 锁死机器没有实例可保留，只能按新号重建（它的库存很可能在之前存盘时已经丢了）。
+                final NBTTagCompound nbt = new NBTTagCompound();
+                base.writeToNBT(nbt);
+                nbt.setInteger("mID", newId.intValue());
+                base.setInitialValuesAsNBT(nbt, (short) newId.intValue());
+            } else {
+                // 只改号、不换实例：AE 节点 / 静态注册表引用全部保持有效。
+                base.setMetaTileID((short) newId.intValue());
+            }
             base.markDirty();
         } catch (Throwable t) {
             // 单台失败不能拖垮整个迁移：记进日志，继续下一台。
@@ -212,7 +236,7 @@ public final class MachineIdMigration {
         return true;
     }
 
-    /** 迁移会重建 MTE 实例，按 UUID/坐标登记的静态表要换成新实例。 */
+    /** 锁死机器走重建路径时换了实例；按 UUID/坐标登记的静态表要换成新实例。 */
     private static void reRegisterLoadedInstance(BaseMetaTileEntity base) {
         final IMetaTileEntity mte = base.getMetaTileEntity();
         if (mte instanceof MTEComprehensiveMiningPlant) {
