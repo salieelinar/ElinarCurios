@@ -431,6 +431,7 @@ public class MTEBeamVoidInputChamber extends MTEHatchInputBeamline implements IB
     public String[] getInfoData() {
         return new String[] { EnumChatFormatting.BLUE + getLocalName() + EnumChatFormatting.RESET, describeLink(),
             "最近粒子：" + (lastParticleId < 0 ? "-" : MTEBeamVoidStorage.particleName(lastParticleId)),
+            String.format(Locale.ROOT, "最近能量：%,.2f eV", lastEnergy * 1000.0F),
             String.format(Locale.ROOT, "最近通量：%,d /s", lastRate), String.format(Locale.ROOT, "累计入库：%,d", totalReceived),
             "状态：" + describeStatus() };
     }

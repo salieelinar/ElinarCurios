@@ -85,8 +85,11 @@ public final class BeamVoidInputGui {
                     .width(TEXT_WIDTH))
             .child(
                 IKey.dynamic(
-                    () -> String
-                        .format(Locale.ROOT, "%s能量：%,.6f keV", EnumChatFormatting.BLACK, energy.getDoubleValue()))
+                    () -> String.format(
+                        Locale.ROOT,
+                        "%s能量（eV）：%,.2f",
+                        EnumChatFormatting.BLACK,
+                        energy.getDoubleValue() * 1000.0D))
                     .asWidget()
                     .width(TEXT_WIDTH))
             .child(
