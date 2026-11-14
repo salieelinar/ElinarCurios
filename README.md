@@ -102,6 +102,8 @@ gradlew.bat spotlessApply build
 
 `config/ElinarCurios.cfg`。
 
+里面还藏着几项彩蛋开关，默认关闭，翻到就知道。
+
 ## 许可
 
 - 无限箱存储核心改编自 Avaritiaddons（MPL-2.0）

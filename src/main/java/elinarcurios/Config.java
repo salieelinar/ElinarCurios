@@ -74,6 +74,12 @@ public final class Config {
      */
     public static int meOutFastFlushHoldTicks;
 
+    /**
+     * 彩蛋（默认关闭）：开启后，净水厂七级（脱气）与八级（重子完美）净化单元的最终成功率恒为 100%。
+     * 默认 false = 完全原版行为，不修改任何东西；改完需重启游戏。
+     */
+    public static boolean purificationTier78AlwaysSucceed;
+
     /** 配置文件句柄（供运行期改默认值时写回 cfg 用）。 */
     private static Configuration configFile;
 
@@ -184,6 +190,13 @@ public final class Config {
             "How many ticks after a multiblock's last working tick the fast flush keeps going, so the last "
                 + "batches of an order leave immediately instead of waiting for GT's next 2 second cycle. "
                 + "100 = 5 seconds. 0 = only on ticks the machine actually works.");
+        purificationTier78AlwaysSucceed = config.getBoolean(
+            "purificationTier78AlwaysSucceed",
+            Configuration.CATEGORY_GENERAL,
+            false,
+            "Easter egg: force the tier 7 (Degasser) and tier 8 (Baryonic Perfection) purification units of the "
+                + "GT5U Water Purification Plant to always succeed (100%). Default false = vanilla behaviour, "
+                + "nothing is modified. Requires a game restart after changing.");
 
         if (config.hasChanged()) config.save();
     }

@@ -6,7 +6,7 @@
 
 ## 当前版本
 
-**v1.0.0**（2026-11-13）。版本号由 git tag 决定：先提交、打 tag、再构建，产物是 `build/libs/ElinarCurios-<版本>.jar`；没打 tag 就构建会带 `-dirty` 后缀。
+**v1.0.0c4**（2026-11-14）。版本号由 git tag 决定：先提交、打 tag、再构建，产物是 `build/libs/ElinarCurios-<版本>.jar`；没打 tag 就构建会带 `-dirty` 后缀。
 
 变更记录不再手写在本文档里：一个 tag 对应一组提交，`git log v<旧版本>..v<新版本> --oneline` 就是这一版的更新日志。
 
@@ -757,6 +757,32 @@ GTNL 的 `ECraftingCPUCluster` 都 `extends CraftingCPUCluster`**、走同一个
 - 玩家单在跑时,同网其它正在干活的机器也会一起快刷(空仓调用零成本,不影响正确性);
 - 不影响**其它**输出仓/总线,也不碰别的 mod 的缓存;
 - 关掉 cfg 即完全回到原版行为,不需要拆方块/改存档。
+
+### 5.35 净水厂七/八级成功率彩蛋（mixin，默认关闭，2026-11-14，v1.0.0c4）
+
+**背景**：GT5U 净水厂（`MTEPurificationPlant`）+ 8 台净化单元是一整条「上一级水 → 下一级净化水」链路。七级「残留净化剂除气机净化单元」（`MTEPurificationUnitDegasser`）和八级「绝对重子完美净化单元」（`MTEPurificationUnitBaryonicPerfection`）的配方本来就只吃上一级水，但最终成功率由各自覆盖的 `calculateFinalSuccessChance()` 硬判定：脱气要求当周期随机出来的 4 位控制信号所需的液体全部按精确量投放，重子要求输入总线里插对随机两连夸克催化剂（每根另耗熔融无尽），否则一律 0%。按芷若要求只改这两台、默认关闭、开关放配置文件（2026-11-14 拍板）。
+
+**实现**（2 个 mixin，只在开关打开时生效）：
+
+| 文件 | 目标 | 注入 |
+|---|---|---|
+| `mixin/MixinMTEPurificationUnitDegasser.java` | `MTEPurificationUnitDegasser#calculateFinalSuccessChance()F` | `@Inject(HEAD, cancellable)` → 返回 `100.0f` |
+| `mixin/MixinMTEPurificationUnitBaryonicPerfection.java` | `MTEPurificationUnitBaryonicPerfection#calculateFinalSuccessChance()F` | 同上 |
+
+- 配置：`Config.purificationTier78AlwaysSucceed`（`ElinarCurios.cfg`，`CATEGORY_GENERAL`，默认 `false`）。
+- 为什么选这两个方法头：全库只有 `MTEPurificationUnitBase.endCycle()`（决定成败）和 `getInfoData()`（扫描器显示）调用它，所以在方法头短路等于一并覆盖「行为 + 显示」，不用碰基类，也不用 ghost 催化剂或改配方。
+- `mixins.elinarcurios.json` 里追加两个类名；`remap = false`（GT5U 类不混淆）。
+- 编译依赖仍是 `build-libs/2.9.0-RC-1/gregtech-5.09.54.183.jar`：两个类与 `public float calculateFinalSuccessChance()` 在 5.09.54.183 与运行版 5.09.54.265 中都存在（已用 javap 核对），签名未变，不需要换依赖。
+
+**副作用**：
+
+- 脱气：4 位控制信号、惰性气体 / 超导熔液 / 中子素熔液全部变成装饰；`outputMultiplier` 恒 1（没有超导体加成水量）。
+- 重子：不再需要夸克催化剂与熔融无尽；配方自带的产出照旧（每周期 500 L 稳定重子物质 + 2 个未对齐催化剂，这是配方输出，不是彩蛋加的）。
+- 其余 6 台净化单元与其它 GT 机器完全不受影响；关掉开关即完全恢复原版。
+
+**风险**：GT5U 升级后若类 / 方法名变动，mixin 会在启动阶段直接报错（不会静默半生效），届时改 target 或临时把开关删掉。
+
+**验收**：两台都只灌上一级水、不喂任何催化剂 → 一个周期后七号出七级净化水、八号出八级净化水，扫描器成功率显示 100%；把 cfg 改成 `false` 重启 → 恢复原版行为。
 
 ## 6. 集成到整合包
 
