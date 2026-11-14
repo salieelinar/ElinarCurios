@@ -1,6 +1,7 @@
 # Elinar Curios
 
 基于GTNH（Minecraft 1.7.10）的私货模组，一些零零碎碎自用的小物品和提升体验的修改。
+有关机器配置可输入 /Elinar 查看说明
 
 ## 无限背包
 
