@@ -82,6 +82,8 @@ public class CommonProxy {
         // 依赖已提升为硬依赖,不再考虑无 GT 环境下的类加载隔离。
         if (Loader.isModLoaded("gregtech")) {
             ElinarMachines.register();
+            // 束流虚空存储器用 UUID 找"已加载实例"：世界卸载时把该世界的条目摘掉，防死引用。
+            MinecraftForge.EVENT_BUS.register(new elinarcurios.machine.BeamVoidRegistryHandler());
             // 综合采掘工厂的 1×1 世界锚：Forge 票据由本 mod 自己持久化 / 重启后恢复，
             // 不走 GTChunkManager（其默认配置下机器票据是“被动锚”，重启后会被丢弃）。
             ElinarChunkManager.init();

@@ -15,6 +15,10 @@ import gregtech.api.interfaces.metatileentity.IMetaTileEntity;
  * <li>{@link #ID_COMPREHENSIVE_MINING_PLANT} = 19084 —— 综合采掘工厂</li>
  * <li>{@link #ID_PATTERN_REDSTONE_DETECTOR} = 19085 —— 样板总成侦测器</li>
  * <li>{@link #ID_BEAM_FLUX_MULTIPLIER} = 19086 —— 束流倍流器</li>
+ * <li>{@link #ID_BEAM_VOID_INPUT_HATCH} = 19087 —— 束流虚空输入仓</li>
+ * <li>{@link #ID_BEAM_VOID_STORAGE} = 19088 —— 束流虚空存储器</li>
+ * <li>{@link #ID_BEAM_VOID_OUTPUT_HATCH} = 19089 —— 束流虚空输出仓</li>
+ * <li>{@link #ID_BEAM_VOID_INPUT_CHAMBER} = 19090 —— 束流虚空输入室</li>
  * <li>{@link #ID_MIRROR_ITEM} = 19102 —— 物品总成镜像</li>
  * <li>{@link #ID_MIRROR_FLUID} = 19103 —— 流体总成镜像</li>
  * <li>{@link #ID_ADVANCED_RADIO_HATCH} = 19104 —— 高级放射仓</li>
@@ -82,6 +86,38 @@ public final class ElinarMachines {
     /** 束流线是 ZPM 阶段内容，机器也取 ZPM 档（tier 只影响外壳颜色与扳手等级）。 */
     public static final int TIER_BEAM_FLUX_MULTIPLIER = 7;
 
+    /**
+     * 束流虚空四件套（2026-11-14 从独立验证版 ElinarBeamVoid 并入）。
+     *
+     * <p>
+     * 19087~19090 落在 19082 的预留区里；独立验证版实机跑过（启动 / 输入侧 / 绑定 / 界面），
+     * 并入时 <b>ID 与 mName 原样照搬</b> —— 她在测试存档里已经放过这些方块。
+     */
+    public static final int ID_BEAM_VOID_INPUT_HATCH = 19087;
+
+    public static final int ID_BEAM_VOID_STORAGE = 19088;
+
+    public static final int ID_BEAM_VOID_OUTPUT_HATCH = 19089;
+
+    public static final int ID_BEAM_VOID_INPUT_CHAMBER = 19090;
+
+    public static final String NAME_BEAM_VOID_INPUT_HATCH = "elinar.machine.beam_void_input_hatch";
+
+    public static final String NAME_BEAM_VOID_STORAGE = "elinar.machine.beam_void_storage";
+
+    public static final String NAME_BEAM_VOID_OUTPUT_HATCH = "elinar.machine.beam_void_output_hatch";
+
+    public static final String NAME_BEAM_VOID_INPUT_CHAMBER = "elinar.machine.beam_void_input_chamber";
+
+    /** 输入仓 / 输入室 / 存储器对齐原版过滤型出束仓（UV=8）；输出仓对齐原版束流输入仓（LuV=6）。 */
+    public static final int TIER_BEAM_VOID_INPUT_HATCH = 8;
+
+    public static final int TIER_BEAM_VOID_STORAGE = 8;
+
+    public static final int TIER_BEAM_VOID_OUTPUT_HATCH = 6;
+
+    public static final int TIER_BEAM_VOID_INPUT_CHAMBER = 8;
+
     /** 可调式流体输入仓的 ID —— 沿用独立验证版 ElinarInputHatch 的号（19083），绝不改。 */
     public static final int ID_INPUT_HATCH_ADJUSTABLE = 19083;
 
@@ -137,6 +173,10 @@ public final class ElinarMachines {
     private static IMetaTileEntity patternRedstoneDetector;
     private static IMetaTileEntity beamFluxMultiplier;
     private static IMetaTileEntity inputHatchAdjustable;
+    private static IMetaTileEntity beamVoidInputHatch;
+    private static IMetaTileEntity beamVoidStorage;
+    private static IMetaTileEntity beamVoidOutputHatch;
+    private static IMetaTileEntity beamVoidInputChamber;
 
     private ElinarMachines() {}
 
@@ -177,6 +217,26 @@ public final class ElinarMachines {
             NAME_INPUT_HATCH_ADJUSTABLE,
             "可调式流体输入仓",
             TIER_INPUT_HATCH_ADJUSTABLE);
+        beamVoidInputHatch = new MTEHatchBeamVoidInput(
+            ID_BEAM_VOID_INPUT_HATCH,
+            NAME_BEAM_VOID_INPUT_HATCH,
+            "束流虚空输入仓",
+            TIER_BEAM_VOID_INPUT_HATCH);
+        beamVoidStorage = new MTEBeamVoidStorage(
+            ID_BEAM_VOID_STORAGE,
+            NAME_BEAM_VOID_STORAGE,
+            "束流虚空存储器",
+            TIER_BEAM_VOID_STORAGE);
+        beamVoidOutputHatch = new MTEHatchBeamVoidOutput(
+            ID_BEAM_VOID_OUTPUT_HATCH,
+            NAME_BEAM_VOID_OUTPUT_HATCH,
+            "束流虚空输出仓",
+            TIER_BEAM_VOID_OUTPUT_HATCH);
+        beamVoidInputChamber = new MTEBeamVoidInputChamber(
+            ID_BEAM_VOID_INPUT_CHAMBER,
+            NAME_BEAM_VOID_INPUT_CHAMBER,
+            "束流虚空输入室",
+            TIER_BEAM_VOID_INPUT_CHAMBER);
     }
 
     /** 天玄虚空能量节点的物品形态（用于配方输出）。未注册成功时返回 null。 */
@@ -221,6 +281,22 @@ public final class ElinarMachines {
         return inputHatchAdjustable;
     }
 
+    public static IMetaTileEntity getBeamVoidInputHatch() {
+        return beamVoidInputHatch;
+    }
+
+    public static IMetaTileEntity getBeamVoidStorage() {
+        return beamVoidStorage;
+    }
+
+    public static IMetaTileEntity getBeamVoidOutputHatch() {
+        return beamVoidOutputHatch;
+    }
+
+    public static IMetaTileEntity getBeamVoidInputChamber() {
+        return beamVoidInputChamber;
+    }
+
     /** 综合采掘工厂配方：8 个流体钻机 IV 围 1 个虚空采矿场 I。 */
     public static void registerRecipes() {
         net.minecraft.item.ItemStack voidMiner = null;
@@ -251,6 +327,9 @@ public final class ElinarMachines {
 
         // 束流倍流器：4 束流管 + 4 ZPM 机壳 + 1 ZPM 发射器（默认方案，2026-11-07）。
         elinarcurios.recipe.BeamFluxMultiplierRecipes.register();
+
+        // 束流虚空四件套（2026-11-14 并入）：输入仓 / 存储器 / 输出仓 / 输入室。
+        elinarcurios.recipe.BeamVoidRecipes.register();
 
         // 可调式流体输入仓：9 个原版输入仓（任意电压）→ 1 个。
         elinarcurios.recipe.AdjustableInputHatchRecipes.register();

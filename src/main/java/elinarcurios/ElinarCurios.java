@@ -18,6 +18,7 @@ import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
+import cpw.mods.fml.common.event.FMLServerStoppedEvent;
 import cpw.mods.fml.common.network.NetworkCheckHandler;
 import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.network.simpleimpl.SimpleNetworkWrapper;
@@ -71,6 +72,12 @@ public final class ElinarCurios {
     @Mod.EventHandler
     public void serverStarting(final FMLServerStartingEvent event) {
         event.registerServerCommand(new elinarcurios.command.CommandElinar());
+    }
+
+    /** 退档 / 服务器停止：清空束流虚空的 UUID 注册表，避免跨存档留下死引用。 */
+    @Mod.EventHandler
+    public void serverStopped(final FMLServerStoppedEvent event) {
+        elinarcurios.machine.BeamVoidStorageRegistry.clear();
     }
 
     @NetworkCheckHandler
