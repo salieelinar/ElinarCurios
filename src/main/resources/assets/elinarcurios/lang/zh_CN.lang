@@ -14,6 +14,7 @@ item.elinarcurios.tooltip.invulnerable=穿戴时:免疫所有伤害、不会死�
 item.elinarcurios.tooltip.equip=右键打开背包；在背包界面点击「穿上」背到背上，之后按快捷键随时打开。
 item.elinarcurios.tooltip.hint=按住 Shift 查看更多信息
 button.elinarcurios.buff.nv=夜视
+button.elinarcurios.buff.ghost=幽灵
 tile.peaceTotem.name=和平图腾
 tile.peaceTotem.tooltip.flavor=和平~宁静~
 tile.peaceTotem.tooltip.range=阻止水平 %s 格、垂直 %s 格内敌对生物自然生成；刷怪笼不受影响

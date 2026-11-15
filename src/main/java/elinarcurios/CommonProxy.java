@@ -145,6 +145,12 @@ public class CommonProxy {
             .bus()
             .register(playerEventHandler);
 
+        // 幽灵模式：服务端每 tick 刷新"幽灵玩家"集合，并每 5 tick 清一次已锁定的怪物仇恨。
+        // 纯 FML 事件（TickEvent），只挂 FML 总线。
+        FMLCommonHandler.instance()
+            .bus()
+            .register(new elinarcurios.player.GhostModeHandler());
+
         final int[] ids = { 0 };
         final SimpleNetworkWrapper net = ElinarCurios.networkWrapper;
         net.registerMessage(InfiniteBagSlotSync.Handler.class, InfiniteBagSlotSync.class, ids[0]++, Side.SERVER);

@@ -14,6 +14,7 @@ item.elinarcurios.tooltip.invulnerable=While worn: immune to all damage, cannot 
 item.elinarcurios.tooltip.equip=Right-click to open. Equip it from the backpack GUI, then press the hotkey to open it anytime.
 item.elinarcurios.tooltip.hint=Hold Shift for more information
 button.elinarcurios.buff.nv=NV
+button.elinarcurios.buff.ghost=Ghost
 tile.peaceTotem.name=Peace Totem
 tile.peaceTotem.tooltip.flavor=Peace~Tranquility~
 tile.peaceTotem.tooltip.range=Blocks natural hostile-mob spawning within %s blocks horizontally and %s vertically; spawners are unaffected

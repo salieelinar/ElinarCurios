@@ -258,7 +258,7 @@ elinarcurios (compound)
 - 客户端实体重建的触发点:换维度、死亡重生(被 Kami 拦住的死亡不会重建)。
 
 ### 5.5 buff 数据流
-`PlayerEventHandler.onPlayerTick`(**注意:FML 事件,必须注册在 FMLCommonHandler bus 上**,曾因只注册 Forge bus 导致 buff 不生效)→ `DragonBuffs.apply(player, wornBag)` 按 NBT 开关应用 → 关闭时 `ToggleBuffPacket` 触发服务端移除并回传 `BuffStatePacket` 刷新按钮。当前仅夜视一个 buff;新增 buff 时:在 `ItemInfiniteBackpack.BUFF_KEYS` 加键 + 在 `DragonBuffs.apply/removeBuff` 加逻辑即可。
+`PlayerEventHandler.onPlayerTick`(**注意:FML 事件,必须注册在 FMLCommonHandler bus 上**,曾因只注册 Forge bus 导致 buff 不生效)→ `DragonBuffs.apply(player, wornBag)` 按 NBT 开关应用 → 关闭时 `ToggleBuffPacket` 触发服务端移除并回传 `BuffStatePacket` 刷新按钮。当前 buff:夜视(默认开,`DragonBuffs` 加药水效果)、幽灵(默认关,不产生药水效果,走 `util/GhostMode` 的 AI 拦截)。新增 buff 时三处同步加:`ItemInfiniteBackpack.BUFF_KEYS` + `BUFF_DEFAULTS`(缺键时的默认值,**新开关一律默认 false**,否则老存档升级后行为会变)+ `BUFF_LANG_KEYS`(GUI 按钮文案);药水类效果再在 `DragonBuffs.apply/removeBuff` 加逻辑。
 
 ### 5.10 Kami 无敌(常驻,穿戴即生效)
 移植自 NH-Utilities Kami Divine Ring(GPL-3.0,事件重实现,不用 mixin):
@@ -783,6 +783,36 @@ GTNL 的 `ECraftingCPUCluster` 都 `extends CraftingCPUCluster`**、走同一个
 **风险**：GT5U 升级后若类 / 方法名变动，mixin 会在启动阶段直接报错（不会静默半生效），届时改 target 或临时把开关删掉。
 
 **验收**：两台都只灌上一级水、不喂任何催化剂 → 一个周期后七号出七级净化水、八号出八级净化水，扫描器成功率显示 100%；把 cfg 改成 `false` 重启 → 恢复原版行为。
+
+### 5.36 无尽背包·幽灵模式(2026-11-15,v1.0.0c5dev1 本地测试版)
+
+**需求(芷若原话)**:「我想给我的无尽背包增加一个开关,就是幽灵模式,开启后玩家还能被看到,但是怪无法识别玩家」。按钮放在夜视旁边、样式与夜视开关一致(文案「幽灵√/×」)。
+
+**机制取证(1.7.10,怪识别玩家只有两条通道,过滤条件都是 `capabilities.disableDamage`)**:
+
+| 通道 | 入口 | 用它的怪 |
+|---|---|---|
+| AI 选敌 | `EntityAITarget.isSuitableTarget`(L143 过滤创造玩家) | 僵尸/骷髅/苦力怕/女巫、凋灵、铁傀儡/雪傀儡、几乎所有 mod 怪 |
+| 直接找玩家 | `World.getClosestVulnerablePlayer`(L3855 同样过滤) | 末影人(64 格凝视)、恶魂(100 格)、蜘蛛/洞穴蜘蛛、史莱姆/岩浆怪(16 格)、蠹虫、僵尸猪人、`EntityMob.findPlayerToAttack` |
+| 已锁定仇恨 | `EntityLiving.attackTarget` / `EntityCreature.entityToAttack` | 前者 AI 派系,后者末影人/蜘蛛/史莱姆/蠹虫(不会每 tick 重判) |
+| 被打反击 | `EntityMob.attackEntityFrom` 直接写 `entityToAttack` | 所有 EntityMob 子类 |
+
+**实现**:
+
+- `mixin/MixinEntityAITarget`: `isSuitableTarget` 的 `HEAD`,目标玩家为幽灵且 `ignoreInvulnerable=false` → 返回 `false`(通道 A)。
+- `mixin/MixinWorldClosestVulnerablePlayer`: `getClosestVulnerablePlayer` 的 `RETURN`,命中幽灵则改用 `GhostMode.findClosestOtherPlayer` 复刻原版扫描找下一个非幽灵玩家(通道 B;`getClosestVulnerablePlayerToEntity` 也走它)。
+- `util/GhostMode` + `player/GhostModeHandler`(FML 总线):每 server tick 从在线玩家表重建 `IdentityHashMap` 幽灵集合(≤1 tick 生效、换维度旧实体不残留);每 5 tick(0.25s)对每个幽灵玩家扫 64 格内 `EntityCreature`,用公开 API 清仇(`setTarget(null)`、`setAttackTarget(null)`)——覆盖「开开关前已被锁定」与「打怪反击」。无幽灵时只剩一个集合判空,零开销。
+- **默认不还手(她 2026-11-15 拍板 )**:幽灵模式下主动打怪,怪不会回头追打(清扫会清掉反击目标)。
+- 开关复用背包 buff 管线:`BUFF_GHOST = "ghost"`(NBT `buffs.ghost`,**默认 false**,靠新增的 `BUFF_DEFAULTS` 实现)、`BUFF_LANG_KEYS` 驱动按钮文案;`ToggleBuffPacket`/`BuffStatePacket` 无需改动。GUI 按钮数量由 `BUFF_KEYS` 驱动,第二颗落在 x=368、夜视在 406、穿上按钮 444,不冲突。
+- **为什么不把 `capabilities.disableDamage` 置 true**(那是最省事的「假无敌」):会让玩家不能进食(`EntityPlayer.canEat`,原版 `ItemFood` 与天厨食盒都卡)、传送门进入时间变 0(秒传)、饥饿不消耗、箭矢/凋灵头骨直接忽略你,其它 mod 也会把你当创造玩家。所以只在 AI 侧拦截。
+
+**构建前提(重要)**:vanilla mixin 必须有 refmap;本工程原有三个 mixin 打的是非混淆 GT5U 类(`remap=false`),所以以前没有注解处理器。现于 `dependencies.gradle` 加 `annotationProcessor files('D:/Agent/GTNH/build-libs/mixin-ap/mixin-0.8.7-processor.jar')`(Sponge maven 下载的自包含 jar,不进仓库),GTNHGradle 会自动传 searge 映射并生成/打包 `mixins.elinarcurios.refmap.json`;`mixins.elinarcurios.json` 里补 `"refmap"` 字段。
+
+**覆盖**:上表全部原版怪;SpecialMobs / InfernalMobs 等继承原版 AI 的 mod 怪自动覆盖;TwilightForest / HEE / Witchery 等自定义怪多数走同一批基类或 `getClosestVulnerablePlayer`,实机抽查即可。
+
+**边界**:①凋灵头骨的随机扫射不走 AI 选敌,仍可能被选中(玩家本来免伤);②其它 mod 若也调 `getClosestVulnerablePlayer*` 找玩家会一并跳过幽灵玩家(唯一外溢面);③末影龙没有仇恨机制,不受影响;④幽灵只在**穿着**背包时生效,脱下有 ≤1 tick 延迟。
+
+**验收**:僵尸/苦力怕贴身不追不炸;盯末影人不尖叫不追;恶魂不喷火球;已追你的怪 1 秒内停下;打怪不还手;关开关立即恢复;第三人称与他人视角模型/名字完全正常。
 
 ## 6. 集成到整合包
 

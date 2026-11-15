@@ -39,10 +39,20 @@ public class ItemInfiniteBackpack extends Item {
     public static final String TAG_PAGES = "pages";
     public static final String TAG_CURRENT_PAGE = "currentPage";
 
-    // Passive buff, toggleable from the backpack GUI
+    // Passive buffs, toggleable from the backpack GUI
     public static final String TAG_BUFFS = "buffs";
     public static final String BUFF_NIGHT_VISION = "nightVision";
-    public static final String[] BUFF_KEYS = { BUFF_NIGHT_VISION };
+    /** Ghost mode: visible to everyone, but hostile mobs no longer target the player. */
+    public static final String BUFF_GHOST = "ghost";
+    public static final String[] BUFF_KEYS = { BUFF_NIGHT_VISION, BUFF_GHOST };
+    /**
+     * State of each buff when the bag NBT carries no explicit flag. Must match {@link #BUFF_KEYS}
+     * order: night vision has always defaulted to ON (existing bags), ghost mode must default to
+     * OFF so upgrading never changes how a bag behaves.
+     */
+    public static final boolean[] BUFF_DEFAULTS = { true, false };
+    /** Localisation keys of the GUI toggle buttons, in {@link #BUFF_KEYS} order. */
+    public static final String[] BUFF_LANG_KEYS = { "button.elinarcurios.buff.nv", "button.elinarcurios.buff.ghost" };
 
     public ItemInfiniteBackpack() {
         setUnlocalizedName("infiniteBackpack");
@@ -129,14 +139,24 @@ public class ItemInfiniteBackpack extends Item {
             .tagCount();
     }
 
-    /** All buffs are enabled by default. */
+    /** Buff state, falling back to {@link #BUFF_DEFAULTS} when the bag has no explicit flag. */
     public static boolean isBuffEnabled(final ItemStack stack, final String buffKey) {
-        if (stack == null || !stack.hasTagCompound()) return true;
+        final int index = buffIndexOf(buffKey);
+        final boolean fallback = index < 0 ? true : BUFF_DEFAULTS[index];
+        if (stack == null || !stack.hasTagCompound()) return fallback;
         final NBTTagCompound root = stack.getTagCompound()
             .getCompoundTag(TAG_ROOT);
-        if (!root.hasKey(TAG_BUFFS, NBT.TAG_COMPOUND)) return true;
-        return root.getCompoundTag(TAG_BUFFS)
-            .getBoolean(buffKey);
+        if (!root.hasKey(TAG_BUFFS, NBT.TAG_COMPOUND)) return fallback;
+        final NBTTagCompound buffs = root.getCompoundTag(TAG_BUFFS);
+        if (!buffs.hasKey(buffKey)) return fallback;
+        return buffs.getBoolean(buffKey);
+    }
+
+    private static int buffIndexOf(final String buffKey) {
+        for (int i = 0; i < BUFF_KEYS.length; i++) {
+            if (BUFF_KEYS[i].equals(buffKey)) return i;
+        }
+        return -1;
     }
 
     /** Returns the new state. */

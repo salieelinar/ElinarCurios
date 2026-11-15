@@ -132,7 +132,7 @@ public final class GuiInfiniteBackpack extends GuiContainer {
     }
 
     private String buffButtonLabel(final int index, final boolean enabled) {
-        return I18n.format("button.elinarcurios.buff.nv") + (enabled ? "\u221a" : "\u00d7");
+        return I18n.format(ItemInfiniteBackpack.BUFF_LANG_KEYS[index]) + (enabled ? "\u221a" : "\u00d7");
     }
 
     /** Called when the server confirms a buff toggle. */
