@@ -80,6 +80,25 @@ public final class Config {
      */
     public static boolean purificationTier78AlwaysSucceed;
 
+    /**
+     * While the Infinite Backpack is worn: keep the backpack with the player on death (no drop into
+     * the world), keep it across the death respawn, and refuse forced inventory purges
+     * ({@code InventoryPlayer.dropAllItems}).
+     */
+    public static boolean protectInfiniteBackpack;
+
+    /** While worn: cancelling {@code /clear <player>} so the backpack and its storage cannot be wiped. */
+    public static boolean blockClearCommand;
+
+    /** While worn: remove every negative potion effect and extinguish the player every 20 ticks. */
+    public static boolean cleanseNegativeEffects;
+
+    /** While worn: zero Thaumcraft permanent/temporary/sticky warp and the warp counter every 20 ticks. */
+    public static boolean clearThaumWarp;
+
+    /** While worn: pull the player back to 1 HP when something sets health to 0 without killing him. */
+    public static boolean clampZeroHealth;
+
     /** 配置文件句柄（供运行期改默认值时写回 cfg 用）。 */
     private static Configuration configFile;
 
@@ -197,6 +216,42 @@ public final class Config {
             "Easter egg: force the tier 7 (Degasser) and tier 8 (Baryonic Perfection) purification units of the "
                 + "GT5U Water Purification Plant to always succeed (100%). Default false = vanilla behaviour, "
                 + "nothing is modified. Requires a game restart after changing.");
+
+        protectInfiniteBackpack = config.getBoolean(
+            "protectInfiniteBackpack",
+            Configuration.CATEGORY_GENERAL,
+            true,
+            "Infinite Backpack: while it is worn, keep it on death (do not drop it into the world), "
+                + "keep it across the respawn (Forge only copies player properties on dimension changes), "
+                + "block /clear for the wearer and refuse bulk inventory purges (InventoryPlayer.dropAllItems).");
+
+        blockClearCommand = config.getBoolean(
+            "blockClearCommand",
+            Configuration.CATEGORY_GENERAL,
+            true,
+            "Infinite Backpack: while it is worn, cancel /clear <player> for that player. The command is "
+                + "intercepted at the command layer (Forge CommandEvent), so nothing in the inventory is touched.");
+
+        cleanseNegativeEffects = config.getBoolean(
+            "cleanseNegativeEffects",
+            Configuration.CATEGORY_GENERAL,
+            true,
+            "Infinite Backpack: while it is worn, every 20 ticks remove all negative potion effects "
+                + "(Potion.isBadEffect) and extinguish the player, like Draconic Evolution's draconic armor does.");
+
+        clearThaumWarp = config.getBoolean(
+            "clearThaumWarp",
+            Configuration.CATEGORY_GENERAL,
+            true,
+            "Infinite Backpack: while it is worn, every 20 ticks zero Thaumcraft warp (permanent, temporary, "
+                + "sticky and the warp counter). Warp events stop firing because the counters stay at 0.");
+
+        clampZeroHealth = config.getBoolean(
+            "clampZeroHealth",
+            Configuration.CATEGORY_GENERAL,
+            true,
+            "Infinite Backpack: while it is worn, if something sets the player's health to 0 without calling "
+                + "onDeath (so the death guard never runs), pull it back to 1 HP on the next tick.");
 
         if (config.hasChanged()) config.save();
     }

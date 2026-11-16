@@ -1,21 +1,43 @@
 package elinarcurios.player;
 
+import java.util.Iterator;
+import java.util.List;
+
+import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.ChatComponentText;
+import net.minecraft.util.StatCollector;
+import net.minecraft.world.World;
+import net.minecraftforge.event.CommandEvent;
 import net.minecraftforge.event.entity.EntityEvent;
+import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.event.entity.player.PlayerDropsEvent;
 
+import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.PlayerEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
+import elinarcurios.Config;
+import elinarcurios.item.ItemInfiniteBackpack;
 import elinarcurios.util.BagUtils;
+import elinarcurios.util.DisarmGuard;
 import elinarcurios.util.DragonBuffs;
+import elinarcurios.util.StatusCleanse;
+import elinarcurios.util.ThaumWarpSupport;
 
 public class PlayerEventHandler {
+
+    /** PlayerPersisted tag holding backpacks rescued from a death drop (Forge copies it on respawn). */
+    private static final String NBT_SAVED_BAGS = "elinarcurios:savedBags";
 
     // ------------------------------------------------------------------ setup
 
@@ -33,20 +55,57 @@ public class PlayerEventHandler {
     public void onPlayerLoggedIn(final PlayerEvent.PlayerLoggedInEvent event) {
         if (event.player instanceof EntityPlayerMP) {
             BagUtils.syncWornBagToClient(event.player);
+            restoreSavedBags(event.player);
         }
+    }
+
+    /**
+     * Forge only copies {@code IExtendedEntityProperties} on dimension changes, not on death respawn
+     * (see EntityPlayer#clonePlayer). Put the worn backpack back on the fresh player and rescue any
+     * backpack that was pulled out of the death drops.
+     */
+    @SubscribeEvent
+    public void onClone(final net.minecraftforge.event.entity.player.PlayerEvent.Clone event) {
+        if (!event.wasDeath || !(event.entityPlayer instanceof EntityPlayerMP)) return;
+
+        final BagProperty original = BagProperty.get(event.original);
+        BagProperty fresh = BagProperty.get(event.entityPlayer);
+        if (fresh == null) {
+            BagProperty.register(event.entityPlayer);
+            fresh = BagProperty.get(event.entityPlayer);
+        }
+        if (original != null && original.getWearable() != null && fresh != null) {
+            fresh.setWearable(
+                original.getWearable()
+                    .copy());
+            BagUtils.syncWornBagToClient(event.entityPlayer);
+        }
+        restoreSavedBags(event.entityPlayer);
     }
 
     // ------------------------------------------------------------------ worn-bag passive effects
 
-    /** Applies the Dragon buffs (Night Vision) while the backpack is worn. */
+    /** Applies the Dragon buffs (Night Vision), zero-health rescue, debuff cleanse and warp wipe. */
     @SubscribeEvent
     public void onPlayerTick(final TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.START) return;
         final EntityPlayer player = event.player;
-        if (player == null || player.isDead) return;
+        if (player == null || player.worldObj == null || player.worldObj.isRemote || player.isDead) return;
         final ItemStack worn = BagUtils.getWornInfiniteBackpack(player);
-        if (worn != null) {
-            DragonBuffs.apply(player, worn);
+        if (worn == null) return;
+
+        // A mod that sets health to 0 without calling onDeath would otherwise leave a living corpse.
+        if (Config.clampZeroHealth && player.getHealth() <= 0.0F) {
+            player.setHealth(1.0F);
+        }
+        DragonBuffs.apply(player, worn);
+
+        if (player.ticksExisted % 20 != 0) return;
+        if (Config.cleanseNegativeEffects) {
+            StatusCleanse.cleanse(player);
+        }
+        if (Config.clearThaumWarp && Loader.isModLoaded("Thaumcraft")) {
+            ThaumWarpSupport.clear(player);
         }
     }
 
@@ -84,29 +143,131 @@ public class PlayerEventHandler {
         }
     }
 
-    // ------------------------------------------------------------------ death drop (non-invulnerable path)
+    // ------------------------------------------------------------------ data protection
 
-    @SubscribeEvent(priority = EventPriority.LOW)
-    public void onPlayerDeath(final LivingDeathEvent event) {
-        if (!(event.entity instanceof EntityPlayer)) return;
-        final EntityPlayer player = (EntityPlayer) event.entity;
-        if (player.worldObj.isRemote) return;
-        final ItemStack worn = BagUtils.getWornInfiniteBackpack(player);
-        if (worn == null) return;
-        // While worn the player is invulnerable: the HIGHEST death handler cancelled
-        // this death, and the 1.7.10 event bus still invokes later listeners, so the
-        // backpack must NOT be dropped or the buff removed here.
-        if (BagUtils.isWearingInfiniteBackpack(player)) return;
+    /**
+     * PlayerDropsEvent is posted after vanilla has captured the death drops but before they enter
+     * the world, so removing the backpack from the list keeps it out of the world entirely. It is
+     * re-delivered on respawn by {@link #restoreSavedBags(EntityPlayer)} through the Forge-persisted
+     * PlayerPersisted tag.
+     */
+    @SubscribeEvent
+    public void onPlayerDrops(final PlayerDropsEvent event) {
+        if (!Config.protectInfiniteBackpack) return;
+        final EntityPlayer player = event.entityPlayer;
+        if (player == null || player.worldObj == null || player.worldObj.isRemote) return;
 
-        // This path only runs for genuine deaths (e.g. invulnerability disabled).
-        DragonBuffs.remove(player);
-        if (!player.getEntityWorld()
-            .getGameRules()
-            .getGameRuleBooleanValue("keepInventory")) {
-            player.dropPlayerItemWithRandomChoice(worn.copy(), false);
+        final Iterator<EntityItem> iterator = event.drops.iterator();
+        while (iterator.hasNext()) {
+            final EntityItem drop = iterator.next();
+            if (drop == null) continue;
+            final ItemStack stack = drop.getEntityItem();
+            if (!ItemInfiniteBackpack.isInfiniteBackpack(stack)) continue;
+            iterator.remove();
+            rememberBag(player, stack.copy());
         }
-        final BagProperty prop = BagProperty.get(player);
-        if (prop != null) prop.setWearable(null);
-        BagUtils.syncWornBagToClient(player);
+    }
+
+    /**
+     * Stops {@code /clear <player>} (1.7.10 has the command) from wiping a backpack wearer's
+     * inventory. Fires on the Forge bus before CommandHandler executes anything; cancelling it
+     * leaves the inventory untouched.
+     */
+    @SubscribeEvent
+    public void onCommand(final CommandEvent event) {
+        if (!Config.blockClearCommand) return;
+        if (event.command == null || !"clear".equals(event.command.getCommandName())) return;
+        final World world = event.sender.getEntityWorld();
+        if (world != null && world.isRemote) return;
+
+        final EntityPlayer target = resolveClearTarget(event);
+        if (target == null || target.worldObj == null || target.worldObj.isRemote) return;
+        if (!BagUtils.isWearingInfiniteBackpack(target)) return;
+
+        event.setCanceled(true);
+        event.sender
+            .addChatMessage(new ChatComponentText(StatCollector.translateToLocal("elinarcurios.clear.blocked")));
+    }
+
+    /**
+     * Records a world item that carries exactly the current held stack of a backpack wearer and was
+     * spawned next to him - the first half of a "drop then clear the hand" disarm. The matching
+     * {@code setCurrentItemOrArmor(0, null)} is intercepted by {@code MixinEntityPlayerSlotGuard}.
+     */
+    @SubscribeEvent
+    public void onEntityItemJoin(final EntityJoinWorldEvent event) {
+        if (event.world == null || event.world.isRemote) return;
+        if (!(event.entity instanceof EntityItem)) return;
+        final EntityItem item = (EntityItem) event.entity;
+        final ItemStack stack = item.getEntityItem();
+        if (stack == null) return;
+
+        EntityPlayer nearest = null;
+        double nearestDistance = 9.0D;
+        final List players = event.world.playerEntities;
+        for (int i = 0; i < players.size(); i++) {
+            final EntityPlayer player = (EntityPlayer) players.get(i);
+            if (!BagUtils.isWearingInfiniteBackpack(player)) continue;
+            final ItemStack held = player.getHeldItem();
+            if (held == null || !ItemStack.areItemStacksEqual(held, stack)) continue;
+            final double distance = item.getDistanceSq(player.posX, player.posY, player.posZ);
+            if (distance < nearestDistance) {
+                nearestDistance = distance;
+                nearest = player;
+            }
+        }
+        if (nearest != null) DisarmGuard.expect(nearest, item);
+    }
+
+    // ------------------------------------------------------------------ helpers
+
+    /** Resolves the player targeted by {@code /clear [player] [item] [data]}. */
+    private static EntityPlayer resolveClearTarget(final CommandEvent event) {
+        final String[] args = event.parameters;
+        final MinecraftServer server = MinecraftServer.getServer();
+        if (args != null && args.length > 0 && server != null) {
+            final String name = args[0];
+            final List players = server.getConfigurationManager().playerEntityList;
+            for (int i = 0; i < players.size(); i++) {
+                final EntityPlayer candidate = (EntityPlayer) players.get(i);
+                if (candidate.getCommandSenderName()
+                    .equalsIgnoreCase(name)) {
+                    return candidate;
+                }
+            }
+        }
+        return event.sender instanceof EntityPlayer ? (EntityPlayer) event.sender : null;
+    }
+
+    private static void rememberBag(final EntityPlayer player, final ItemStack stack) {
+        if (stack == null) return;
+        final NBTTagCompound data = player.getEntityData();
+        final NBTTagCompound persisted = data.getCompoundTag(EntityPlayer.PERSISTED_NBT_TAG);
+        final NBTTagList list = persisted.getTagList(NBT_SAVED_BAGS, 10);
+        list.appendTag(stack.writeToNBT(new NBTTagCompound()));
+        persisted.setTag(NBT_SAVED_BAGS, list);
+        data.setTag(EntityPlayer.PERSISTED_NBT_TAG, persisted);
+    }
+
+    private static void restoreSavedBags(final EntityPlayer player) {
+        if (player == null || player.worldObj == null || player.worldObj.isRemote) return;
+        final NBTTagCompound data = player.getEntityData();
+        if (!data.hasKey(EntityPlayer.PERSISTED_NBT_TAG, 10)) return;
+        final NBTTagCompound persisted = data.getCompoundTag(EntityPlayer.PERSISTED_NBT_TAG);
+        if (!persisted.hasKey(NBT_SAVED_BAGS, 9)) return;
+
+        final NBTTagList list = persisted.getTagList(NBT_SAVED_BAGS, 10);
+        for (int i = 0; i < list.tagCount(); i++) {
+            final ItemStack stack = ItemStack.loadItemStackFromNBT(list.getCompoundTagAt(i));
+            if (stack == null) continue;
+            if (!player.inventory.addItemStackToInventory(stack)) {
+                player.dropPlayerItemWithRandomChoice(stack, false);
+            }
+        }
+        persisted.removeTag(NBT_SAVED_BAGS);
+        data.setTag(EntityPlayer.PERSISTED_NBT_TAG, persisted);
+        if (player instanceof EntityPlayerMP) {
+            player.inventoryContainer.detectAndSendChanges();
+        }
     }
 }

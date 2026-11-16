@@ -206,3 +206,4 @@ elinarcurios.beamvoid.desc.chamber.1=Once linked, every packet is stored immedia
 elinarcurios.beamvoid.desc.chamber.2=Unlinked: only displays the last packet, stores nothing.
 elinarcurios.beamvoid.desc.chamber.3=Data Stick: left-click storage, right-click this block; sneak-right-click to unlink.
 elinarcurios.beamvoid.desc.chamber.4=Reconnects automatically after the storage is moved (by UUID).
+elinarcurios.clear.blocked=The Infinite Backpack protects this player's inventory; /clear was cancelled.

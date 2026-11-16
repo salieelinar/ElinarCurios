@@ -206,3 +206,4 @@ elinarcurios.beamvoid.desc.chamber.1=绑定存储器后收到即入库；19 种�
 elinarcurios.beamvoid.desc.chamber.2=未绑定：只显示收到的束流，不入库。
 elinarcurios.beamvoid.desc.chamber.3=闪存左键存储器 → 右键本方块绑定；潜行右键解绑。
 elinarcurios.beamvoid.desc.chamber.4=存储器搬家后会自动重连（按 UUID）。
+elinarcurios.clear.blocked=无尽背包已保护该玩家的物品栏，/clear 已取消。
