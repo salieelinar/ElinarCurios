@@ -6,7 +6,9 @@
 
 ## 当前版本
 
-**v1.0.0c4**（2026-11-14）。版本号由 git tag 决定：先提交、打 tag、再构建，产物是 `build/libs/ElinarCurios-<版本>.jar`；没打 tag 就构建会带 `-dirty` 后缀。
+**v1.0.0 c6**（2026-11-16）。版本号由 git tag 决定：先提交、打 tag、再构建，产物是 `build/libs/ElinarCurios-<版本>.jar`；没打 tag 就构建会带 `-dirty` 后缀。
+
+**tag 不能带空格**：正式 tag 用 `v1.0.0c6`，但显示名/jar 名要带空格时，构建前设 `$env:VERSION = "v1.0.0 c6"`（gtnhgradle 读 `System.getenv("VERSION")` 覆盖 git 版本，`mcmod.info` 与 jar 名都会变成 `v1.0.0 c6`）。
 
 变更记录不再手写在本文档里：一个 tag 对应一组提交，`git log v<旧版本>..v<新版本> --oneline` 就是这一版的更新日志。
 
@@ -146,7 +148,8 @@ $env:JAVA_HOME = "F:\AI\toolchain\java\jdk25\jdk-25.0.4+7"
 - 不需要再设 `GRADLE_OPTS`/`org.gradle.java.installations.paths`(daemon 直接跑在 JDK 25 上,JDK 8 工具链已不需要);
 - `spotlessApply` 自动格式化代码(必跑,否则 `spotlessJavaCheck` 会挂);
 - 产物:`build\libs\ElinarCurios-v<版本>.jar`(reobf,可玩版);
-- 复制到 `dist\` 即为交付物。
+- 复制到 `dist\` 即为交付物;
+- 显示名带空格时（如 `v1.0.0 c6`）：构建前加 `$env:VERSION = "v1.0.0 c6"`，tag 仍用无空格的 `v1.0.0c6`。
 
 #### 3.2.1 受限环境(DSH sandbox,workspace-write)下构建(2026-09-22 实测可用)
 
@@ -813,6 +816,27 @@ GTNL 的 `ECraftingCPUCluster` 都 `extends CraftingCPUCluster`**、走同一个
 **边界**:①凋灵头骨的随机扫射不走 AI 选敌,仍可能被选中(玩家本来免伤);②其它 mod 若也调 `getClosestVulnerablePlayer*` 找玩家会一并跳过幽灵玩家(唯一外溢面);③末影龙没有仇恨机制,不受影响;④幽灵只在**穿着**背包时生效,脱下有 ≤1 tick 延迟。
 
 **验收**:僵尸/苦力怕贴身不追不炸;盯末影人不尖叫不追;恶魂不喷火球;已追你的怪 1 秒内停下;打怪不还手;关开关立即恢复;第三人称与他人视角模型/名字完全正常。
+
+### 5.37 无尽背包·防御与净化(2026-11-16,v1.0.0 c6)
+
+**需求**:防御端对齐氪金萝莉(稳定第一);防缴械、防数据清除必须;负面效果全清(含神秘时代扭曲)。
+
+**实现**:
+
+| 项 | 做法 |
+|---|---|
+| `/clear` | 1.7.10 有该命令。Forge `CommandEvent` 拦截:命令名 `clear`、目标玩家穿着背包 → 取消命令 + 给发送者提示(`PlayerEventHandler#onCommand`)。命令层拦截,不动 `InventoryPlayer` |
+| 死亡兜底 | `PlayerEvent.Clone(wasDeath)` 把穿戴包复制给重生后的新玩家(Forge 只在跨维度复制扩展属性);未穿戴死亡时 `PlayerDropsEvent` 把包从掉落列表摘出,存 `PlayerPersisted`(Forge 跨死亡复制),重生/登录归还 |
+| 0 血兜底 | 穿戴时每 tick `health <= 0 → setHealth(1)`(防绕过 `onDeath` 的直杀) |
+| 负面效果 | 每 20 tick(照龙之研究神龙套):拷贝 `getActivePotionEffects()` → 反射 `Potion.isBadEffect`(`field_76418_K`,按 id 缓存)全部移除 + `extinguish()`。不扣能量、无例外表 |
+| 扭曲 | 每 20 tick 读 TC `PlayerKnowledge` 的 `warp/warpTemp/warpSticky/warpCount`,非 0 才写 0。永久扭曲是完成研究时**一次性累积**的值(不是按研究数量重算),清 0 即永久清(官方 `/thaumcraft warp <p> set 0 PERM` 同路径) |
+| 防缴械 | 盗贼骷髅:攻击失败就不调 `onTypeAttack`,现有免伤事件天然挡住;Witchery Expelliarmus:`EntityJoinWorld` 记录"正好是手持物的掉落",mixin `EntityPlayer.setCurrentItemOrArmor` 取消清槽并删掉那个掉落物(避免复制) |
+
+**配置**(`config\ElinarCurios.cfg`,默认全 true):`protectInfiniteBackpack` / `blockClearCommand` / `cleanseNegativeEffects` / `clearThaumWarp` / `clampZeroHealth`。
+
+**边界**:①装备/手持的 TC 装备扭曲(`IWarpingGear`)不在清零范围(不常驻 warp ward);②`/clear` 只对"目标穿着者"生效;③`InventoryPlayer.dropAllItems` 的 mixin 因 1.7.10 refmap 不生成 `@Shadow` 字段映射而放弃,批量清包由命令层 + 死亡掉落层覆盖。
+
+**验收**(2026-11-16 实机):清空背包、切换维度、清扭曲、`/kill`、负面 debuff 均正常;启动日志无 mixin/本模组报错,全部 6 个 mixin 均 `Mixing ... into` 成功。
 
 ## 6. 集成到整合包
 
