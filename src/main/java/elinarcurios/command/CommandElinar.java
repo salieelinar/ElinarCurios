@@ -29,7 +29,7 @@ import gregtech.api.interfaces.tileentity.IGregTechTileEntity;
  */
 public class CommandElinar implements ICommand {
 
-    private static final String USAGE = "/Elinar <infiore|setore|meflush|idmigrate|idcheck|help>";
+    private static final String USAGE = "/Elinar <infiore|setore|meflush|idmigrate|idcheck|gtid|help>";
 
     @Override
     public String getCommandName() {
@@ -72,6 +72,10 @@ public class CommandElinar implements ICommand {
         }
         if ("idcheck".equals(sub)) {
             machineIdCheck(sender);
+            return;
+        }
+        if ("gtid".equals(sub)) {
+            GtidExport.start(sender);
             return;
         }
         if ("help".equals(sub) || "?".equals(sub)) {
@@ -399,6 +403,8 @@ public class CommandElinar implements ICommand {
         send(sender, EnumChatFormatting.DARK_GRAY + "  本版只注册 23100-23112；旧号物品（背包/箱子/掉落物）会改成新号");
         send(sender, EnumChatFormatting.DARK_GRAY + "  若报「旧号机器已锁死」：装回 v1.0.0c2a 迁移，再换回本版");
         send(sender, EnumChatFormatting.YELLOW + "/Elinar idcheck" + EnumChatFormatting.GRAY + " —— 检查旧号残留（机器坐标）");
+        send(sender, EnumChatFormatting.YELLOW + "/Elinar gtid" + EnumChatFormatting.GRAY + " —— 导出 GT 机器 ID 占用表");
+        send(sender, EnumChatFormatting.DARK_GRAY + "  CSV 写到 logs/gregtech_machine_ids.csv，约 3 秒扫完，不打印明细");
         send(sender, EnumChatFormatting.YELLOW + "/Elinar help" + EnumChatFormatting.GRAY + " —— 显示本帮助");
     }
 
@@ -429,6 +435,7 @@ public class CommandElinar implements ICommand {
             options.add("meflush");
             options.add("idmigrate");
             options.add("idcheck");
+            options.add("gtid");
             options.add("help");
             return options;
         }
@@ -456,6 +463,7 @@ public class CommandElinar implements ICommand {
 
     @Override
     public int compareTo(Object o) {
-        return 0;
+        // HelpFixer warns when a command's compareTo is not name-based.
+        return getCommandName().compareTo(((ICommand) o).getCommandName());
     }
 }

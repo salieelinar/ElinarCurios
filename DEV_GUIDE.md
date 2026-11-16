@@ -10,6 +10,8 @@
 
 **tag 不能带空格**：正式 tag 用 `v1.0.0c7`，但显示名/jar 名要带空格时，构建前设 `$env:VERSION = "v1.0.0 c7"`（gtnhgradle 读 `System.getenv("VERSION")` 覆盖 git 版本，`mcmod.info` 与 jar 名都会变成 `v1.0.0 c7`）。
 
+**dev 分支（2026-11-16 起）**：日常改动提交到 `dev` 分支，dev 包版本 = `v1.0.1-dev-<git short sha，12 位>`（例 `ElinarCurios-v1.0.1-dev-fd3ecfb944ed`），不打 tag、不发 Release；验收通过后 `dev` 合并到 `main`，在 main 上打 `v1.0.1` 正式 tag 并发 Release。c 序号系列停在 `c7`，下一正式版从 `1.0.1` 开始。dev 构建前必须 commit（工作区干净），版本里的 sha 才是当前代码。
+
 变更记录不再手写在本文档里：一个 tag 对应一组提交，`git log v<旧版本>..v<新版本> --oneline` 就是这一版的更新日志。
 
 **一条历史教训（勿重蹈）**：曾把背包容量往 long（`Long.MAX_VALUE`）升级，实测游戏卡死 —— 1.7.10 的容器同步协议对单包大小有硬限制。容量与网络协议**保持 int**，21.4 亿对临时存储足够。
@@ -150,6 +152,7 @@ $env:JAVA_HOME = "F:\AI\toolchain\java\jdk25\jdk-25.0.4+7"
 - 产物:`build\libs\ElinarCurios-v<版本>.jar`(reobf,可玩版);
 - 复制到 `dist\` 即为交付物;
 - 显示名带空格时（如 `v1.0.0 c7`）：构建前加 `$env:VERSION = "v1.0.0 c7"`，tag 仍用无空格的 `v1.0.0c7`。
+- dev 分支构建：commit 后 `$env:VERSION = "v1.0.1-dev-$((git rev-parse --short=12 HEAD))"`，产物形如 `ElinarCurios-v1.0.1-dev-fd3ecfb944ed.jar`；dev 包不进 Release。
 
 #### 3.2.1 受限环境(DSH sandbox,workspace-write)下构建(2026-09-22 实测可用)
 
@@ -839,6 +842,25 @@ GTNL 的 `ECraftingCPUCluster` 都 `extends CraftingCPUCluster`**、走同一个
 **边界**:①装备/手持的 TC 装备扭曲(`IWarpingGear`)不在清零范围(不常驻 warp ward);②`/clear` 只对"目标穿着者"生效;③`InventoryPlayer.dropAllItems` 的 mixin 因 1.7.10 refmap 不生成 `@Shadow` 字段映射而放弃,批量清包由命令层 + 死亡掉落层覆盖。
 
 **验收**(2026-11-16 实机):清空背包、切换维度、清扭曲、`/kill`、负面 debuff 均正常;启动日志无 mixin/本模组报错,全部 6 个 mixin 均 `Mixing ... into` 成功。
+
+### 5.38 /Elinar gtid：GT 机器 ID 占用表导出（dev，2026-11-16）
+
+**命令**：`/Elinar gtid`（大小写不敏感，服务器/单人命令）。
+
+**输出**：`.minecraft/logs/gregtech_machine_ids.csv`（UTF-8 带 BOM，Excel 直接打开），列：
+
+| 列 | 含义 |
+|---|---|
+| `id` | 1..32768 |
+| `occupied` | 1 = GT 注册表里该 id 有条目，0 = 空闲 |
+| `meta_name` | `IMetaTileEntity.getMetaName()` |
+| `local_name` | `getLocalName()`（本地化名，取不到时可能是 key） |
+| `class_name` | 实现类全名（可看出属于 GT / GT++ / BartWorks 等） |
+| `note` | `out_of_gt_range`（id ≥ 32766，超出 `GregTechAPI.METATILEENTITIES` 长度）、`meta_error` / `local_error`（单个条目取值异常） |
+
+**实现**：`command/GtidExport` + `command/GtidExportHandler`（FML `ServerTickEvent`）；数据源 `gregtech.api.GregTechAPI.METATILEENTITIES`（长度 `Short.MAX_VALUE-1 = 32766`）；每秒 tick 扫 512 个 id，32768 个约 **3.2 秒**，不卡顿；扫描期间不打印任何明细，只在完成时聊天栏给文件绝对路径。再次执行期间只会提示“正在导出”。
+
+**边界**：服务器中途关闭会留下部分文件（`abort()` 会写日志）；单个 MTE 的名字取值异常不会中断扫描，记进 `note`。
 
 ## 6. 集成到整合包
 

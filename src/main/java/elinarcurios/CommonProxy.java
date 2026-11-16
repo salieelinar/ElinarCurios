@@ -151,6 +151,11 @@ public class CommonProxy {
             .bus()
             .register(new elinarcurios.player.GhostModeHandler());
 
+        // GT 机器 ID 表导出：/Elinar gtid 触发，分 tick 扫描，CSV 写到 logs/。
+        FMLCommonHandler.instance()
+            .bus()
+            .register(new elinarcurios.command.GtidExportHandler());
+
         final int[] ids = { 0 };
         final SimpleNetworkWrapper net = ElinarCurios.networkWrapper;
         net.registerMessage(InfiniteBagSlotSync.Handler.class, InfiniteBagSlotSync.class, ids[0]++, Side.SERVER);
