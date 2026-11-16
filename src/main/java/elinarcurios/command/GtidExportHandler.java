@@ -1,6 +1,5 @@
 package elinarcurios.command;
 
-import cpw.mods.fml.common.event.FMLServerStoppingEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 
@@ -10,10 +9,5 @@ public class GtidExportHandler {
     @SubscribeEvent
     public void onServerTick(final TickEvent.ServerTickEvent event) {
         if (event.phase == TickEvent.Phase.END) GtidExport.tick();
-    }
-
-    @SubscribeEvent
-    public void onServerStopping(final FMLServerStoppingEvent event) {
-        GtidExport.abort();
     }
 }

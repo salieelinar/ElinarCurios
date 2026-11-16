@@ -860,7 +860,7 @@ GTNL 的 `ECraftingCPUCluster` 都 `extends CraftingCPUCluster`**、走同一个
 
 **实现**：`command/GtidExport` + `command/GtidExportHandler`（FML `ServerTickEvent`）；数据源 `gregtech.api.GregTechAPI.METATILEENTITIES`（长度 `Short.MAX_VALUE-1 = 32766`）；每秒 tick 扫 512 个 id，32768 个约 **3.2 秒**，不卡顿；扫描期间不打印任何明细，只在完成时聊天栏给文件绝对路径。再次执行期间只会提示“正在导出”。
 
-**边界**：服务器中途关闭会留下部分文件（`abort()` 会写日志）；单个 MTE 的名字取值异常不会中断扫描，记进 `note`。
+**边界**：服务器中途关闭会留下部分文件（没有做停机收尾）；单个 MTE 的名字取值异常不会中断扫描，记进 `note`。
 
 ## 6. 集成到整合包
 

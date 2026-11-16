@@ -87,7 +87,7 @@ public final class GtidExport {
         }
     }
 
-    /** Abort an in-flight scan (server stopping); keeps a partial file. */
+    /** Abort an in-flight scan (kept for callers that stop the export early); keeps a partial file. */
     public static void abort() {
         if (!running) return;
         closeQuietly();
