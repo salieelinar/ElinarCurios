@@ -90,15 +90,20 @@ public class PlayerEventHandler {
     public void onPlayerTick(final TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.START) return;
         final EntityPlayer player = event.player;
-        if (player == null || player.worldObj == null || player.worldObj.isRemote || player.isDead) return;
+        if (player == null || player.worldObj == null || player.isDead) return;
         final ItemStack worn = BagUtils.getWornInfiniteBackpack(player);
         if (worn == null) return;
+
+        // Keep the client-side self-refresh: a 239-tick Night Vision effect is only stable when the
+        // client re-applies it too. Server-side packets alone can leave the local effect to expire
+        // (the player sees the backpack's Night Vision "switched off").
+        DragonBuffs.apply(player, worn);
+        if (player.worldObj.isRemote) return;
 
         // A mod that sets health to 0 without calling onDeath would otherwise leave a living corpse.
         if (Config.clampZeroHealth && player.getHealth() <= 0.0F) {
             player.setHealth(1.0F);
         }
-        DragonBuffs.apply(player, worn);
 
         if (player.ticksExisted % 20 != 0) return;
         if (Config.cleanseNegativeEffects) {

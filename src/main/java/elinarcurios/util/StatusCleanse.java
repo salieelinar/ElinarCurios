@@ -40,6 +40,9 @@ public final class StatusCleanse {
         for (final PotionEffect effect : effects) {
             if (effect == null) continue;
             final int id = effect.getPotionID();
+            // The backpack's own Night Vision must never be cleansed, even if a future mapping
+            // change makes the isBadEffect lookup return the wrong value.
+            if (id == Potion.nightVision.id) continue;
             if (!isBad(id)) continue;
             player.removePotionEffect(id);
         }
