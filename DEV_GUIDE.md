@@ -10,7 +10,7 @@
 
 **tag 不能带空格**：正式 tag 用 `v1.0.0c7`，但显示名/jar 名要带空格时，构建前设 `$env:VERSION = "v1.0.0 c7"`（gtnhgradle 读 `System.getenv("VERSION")` 覆盖 git 版本，`mcmod.info` 与 jar 名都会变成 `v1.0.0 c7`）。
 
-**dev 分支（2026-11-16 起）**：日常改动提交到 `dev` 分支，dev 包版本 = `v1.0.1-dev-<git short sha，12 位>`（例 `ElinarCurios-v1.0.1-dev-fd3ecfb944ed`），不打 tag、不发 Release；验收通过后 `dev` 合并到 `main`，在 main 上打 `v1.0.1` 正式 tag 并发 Release。c 序号系列停在 `c7`，下一正式版从 `1.0.1` 开始。dev 构建前必须 commit（工作区干净），版本里的 sha 才是当前代码。
+**dev 分支（2026-11-16 起）**：日常改动提交到 `dev` 分支，dev 包版本 = `v1.0.1-dev-<git short sha，12 位>`（例 `ElinarCurios-v1.0.1-dev-fd3ecfb944ed`），不打 tag、不发 Release。dev 上可以**连续攒多个功能**，每个功能单独出 dev 包测；等她确认「这一批可以合」时再一次性把 dev 合并到 `main`、打 `v1.0.1` 正式 tag 并发 Release（不逐个功能合并）。c 序号系列停在 `c7`，下一正式版从 `1.0.1` 开始。dev 构建前必须 commit（工作区干净），版本里的 sha 才是当前代码。
 
 变更记录不再手写在本文档里：一个 tag 对应一组提交，`git log v<旧版本>..v<新版本> --oneline` 就是这一版的更新日志。
 
@@ -860,7 +860,7 @@ GTNL 的 `ECraftingCPUCluster` 都 `extends CraftingCPUCluster`**、走同一个
 
 **实现**：`command/GtidExport` + `command/GtidExportHandler`（FML `ServerTickEvent`）；数据源 `gregtech.api.GregTechAPI.METATILEENTITIES`（长度 `Short.MAX_VALUE-1 = 32766`）；每秒 tick 扫 512 个 id，32768 个约 **3.2 秒**，不卡顿；扫描期间不打印任何明细，只在完成时聊天栏给文件绝对路径。再次执行期间只会提示“正在导出”。
 
-**边界**：服务器中途关闭会留下部分文件（没有做停机收尾）；单个 MTE 的名字取值异常不会中断扫描，记进 `note`。
+**边界**：服务器中途关闭会留下部分文件（没有做停机收尾）；单个 MTE 的名字取值异常不会中断扫描，记进 `note`。**2026-11-16 她实测通过**（命令、CSV、位置均正常）。
 
 ## 6. 集成到整合包
 
