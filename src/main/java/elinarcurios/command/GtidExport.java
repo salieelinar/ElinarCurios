@@ -123,7 +123,15 @@ public final class GtidExport {
         }
 
         writer.write(
-            id + "," + (occupied ? "1" : "0") + "," + quote(metaName) + "," + quote(localName) + "," + quote(className) + ","
+            id + ","
+                + (occupied ? "1" : "0")
+                + ","
+                + quote(metaName)
+                + ","
+                + quote(localName)
+                + ","
+                + quote(className)
+                + ","
                 + quote(note));
         writer.newLine();
     }
