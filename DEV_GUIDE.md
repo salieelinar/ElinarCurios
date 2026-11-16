@@ -6,9 +6,9 @@
 
 ## 当前版本
 
-**v1.0.0 c6**（2026-11-16）。版本号由 git tag 决定：先提交、打 tag、再构建，产物是 `build/libs/ElinarCurios-<版本>.jar`；没打 tag 就构建会带 `-dirty` 后缀。
+**v1.0.0 c7**（2026-11-16）。版本号由 git tag 决定：先提交、打 tag、再构建，产物是 `build/libs/ElinarCurios-<版本>.jar`；没打 tag 就构建会带 `-dirty` 后缀。c7 是 c6 的夜视回归修复（c6 的客户端早退把 `DragonBuffs.apply` 的自续砍掉，见 §5.37）。
 
-**tag 不能带空格**：正式 tag 用 `v1.0.0c6`，但显示名/jar 名要带空格时，构建前设 `$env:VERSION = "v1.0.0 c6"`（gtnhgradle 读 `System.getenv("VERSION")` 覆盖 git 版本，`mcmod.info` 与 jar 名都会变成 `v1.0.0 c6`）。
+**tag 不能带空格**：正式 tag 用 `v1.0.0c7`，但显示名/jar 名要带空格时，构建前设 `$env:VERSION = "v1.0.0 c7"`（gtnhgradle 读 `System.getenv("VERSION")` 覆盖 git 版本，`mcmod.info` 与 jar 名都会变成 `v1.0.0 c7`）。
 
 变更记录不再手写在本文档里：一个 tag 对应一组提交，`git log v<旧版本>..v<新版本> --oneline` 就是这一版的更新日志。
 
@@ -149,7 +149,7 @@ $env:JAVA_HOME = "F:\AI\toolchain\java\jdk25\jdk-25.0.4+7"
 - `spotlessApply` 自动格式化代码(必跑,否则 `spotlessJavaCheck` 会挂);
 - 产物:`build\libs\ElinarCurios-v<版本>.jar`(reobf,可玩版);
 - 复制到 `dist\` 即为交付物;
-- 显示名带空格时（如 `v1.0.0 c6`）：构建前加 `$env:VERSION = "v1.0.0 c6"`，tag 仍用无空格的 `v1.0.0c6`。
+- 显示名带空格时（如 `v1.0.0 c7`）：构建前加 `$env:VERSION = "v1.0.0 c7"`，tag 仍用无空格的 `v1.0.0c7`。
 
 #### 3.2.1 受限环境(DSH sandbox,workspace-write)下构建(2026-09-22 实测可用)
 
@@ -817,7 +817,9 @@ GTNL 的 `ECraftingCPUCluster` 都 `extends CraftingCPUCluster`**、走同一个
 
 **验收**:僵尸/苦力怕贴身不追不炸;盯末影人不尖叫不追;恶魂不喷火球;已追你的怪 1 秒内停下;打怪不还手;关开关立即恢复;第三人称与他人视角模型/名字完全正常。
 
-### 5.37 无尽背包·防御与净化(2026-11-16,v1.0.0 c6)
+### 5.37 无尽背包·防御与净化(2026-11-16,v1.0.0 c6 → c7)
+
+**c7 修复（2026-11-16）**：c6 把 `onPlayerTick` 顶部改成 `isRemote` 早退，连带把 `DragonBuffs.apply` 的客户端每 tick 自续砍掉 → 无尽背包夜视「被屏蔽」。修复：`DragonBuffs.apply` 挪到 `isRemote` 早退之前（双端自续），`StatusCleanse` 显式跳过 `Potion.nightVision.id`。教训：给 tick handler 加端侧守卫前，先列出哪些逻辑客户端也必须跑（自续 buff/粒子/渲染）。
 
 **需求**:防御端对齐氪金萝莉(稳定第一);防缴械、防数据清除必须;负面效果全清(含神秘时代扭曲)。
 
