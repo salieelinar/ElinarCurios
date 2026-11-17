@@ -4,6 +4,11 @@
 有关机器配置可输入 /Elinar 查看说明
 本mod的机器号段已迁移至 23100-23112
 
+## 下载
+
+- 稳定版：[GitHub Releases](https://github.com/salieelinar/ElinarCurios/releases/latest)
+- 开发版（Dev Build）：[最新开发构建](https://github.com/salieelinar/ElinarCurios/releases/tag/dev-build)（仅供测试，可能不稳定，随 dev 分支更新）
+
 ## 无限背包
 
 - 243 格，单格上限 2,147,483,647（Integer.MAX_VALUE），自动合并、溢出安全
