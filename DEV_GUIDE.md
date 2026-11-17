@@ -10,7 +10,7 @@
 
 **tag 不能带空格**：正式 tag 用 `v1.0.0c7`，但显示名/jar 名要带空格时，构建前设 `$env:VERSION = "v1.0.0 c7"`（gtnhgradle 读 `System.getenv("VERSION")` 覆盖 git 版本，`mcmod.info` 与 jar 名都会变成 `v1.0.0 c7`）。
 
-**dev 分支（2026-11-16 起）**：日常改动提交到 `dev` 分支，dev 包版本 = `v1.0.1-dev-<git short sha，12 位>`（例 `ElinarCurios-v1.0.1-dev-fd3ecfb944ed`）。dev 包**不发正式 Release**，但可以发成 GitHub **Pre-release**（tag `v1.0.1-dev-<sha12>`、页面标 Pre-release），这样别人在 Releases 页无需登录就能下载，也不会顶掉 main 的 Latest 正式版。dev 上可以**连续攒多个功能**，每个功能单独出 dev 包测；等她确认「这一批可以合」时再一次性把 dev 合并到 `main`、打 `v1.0.1` 正式 tag 并发正式 Release（不逐个功能合并）。c 序号系列停在 `c7`，下一正式版从 `1.0.1` 开始。dev 构建前必须 commit（工作区干净），版本里的 sha 才是当前代码。
+**dev 分支（2026-11-16 起）**：日常改动提交到 `dev` 分支，dev 包版本 = `v1.0.1-dev-<git short sha，12 位>`（例 `ElinarCurios-v1.0.1-dev-fd3ecfb944ed`）。dev 包**不发正式 Release**，统一发到**固定 dev 页**（tag `dev-build`、页面标 Pre-release，附件固定名 `ElinarCurios-dev-build.jar` 每次覆盖；https://github.com/salieelinar/ElinarCurios/releases/tag/dev-build ），这样别人在 Releases 页无需登录就能下载，也不会顶掉 main 的 Latest 正式版。dev 上可以**连续攒多个功能**，每个功能单独出 dev 包测；等她确认「这一批可以合」时再一次性把 dev 合并到 `main`、打 `v1.0.1` 正式 tag 并发正式 Release（不逐个功能合并）。c 序号系列停在 `c7`，下一正式版从 `1.0.1` 开始。dev 构建前必须 commit（工作区干净），版本里的 sha 才是当前代码。
 
 变更记录不再手写在本文档里：一个 tag 对应一组提交，`git log v<旧版本>..v<新版本> --oneline` 就是这一版的更新日志。
 
@@ -152,8 +152,12 @@ $env:JAVA_HOME = "F:\AI\toolchain\java\jdk25\jdk-25.0.4+7"
 - 产物:`build\libs\ElinarCurios-v<版本>.jar`(reobf,可玩版);
 - 复制到 `dist\` 即为交付物;
 - 显示名带空格时（如 `v1.0.0 c7`）：构建前加 `$env:VERSION = "v1.0.0 c7"`，tag 仍用无空格的 `v1.0.0c7`。
-- dev 分支构建：commit 后 `$env:VERSION = "v1.0.1-dev-$((git rev-parse --short=12 HEAD))"`，产物形如 `ElinarCurios-v1.0.1-dev-fd3ecfb944ed.jar`；dev 包可发 Pre-release：
-  `git tag v1.0.1-dev-<sha12> <commit> && git push origin v1.0.1-dev-<sha12>`，再 `gh release create v1.0.1-dev-<sha12> --prerelease --title ... <jar>`（`--prerelease` 保证不抢 Latest）。
+- dev 分支构建：commit 后 `$env:VERSION = "v1.0.1-dev-$((git rev-parse --short=12 HEAD))"`，产物形如 `ElinarCurios-v1.0.1-dev-fd3ecfb944ed.jar`；
+- 统一发到固定 dev 页（tag `dev-build`，Pre-release，不抢正式版 Latest）：
+  `Copy-Item "dist\ElinarCurios-v1.0.1-dev-<sha12>.jar" "dist\ElinarCurios-dev-build.jar" -Force`
+  `gh release upload dev-build "dist\ElinarCurios-dev-build.jar" --clobber`
+  `gh release edit dev-build --prerelease --title "Dev Build" --notes "开发版，仅供测试；版本 v1.0.1-dev-<sha12>，commit <sha>，内容 …"`
+  （固定页首次已建：https://github.com/salieelinar/ElinarCurios/releases/tag/dev-build ；tag 停在首次创建 commit，页面说明里写当前版本/commit。）
 
 #### 3.2.1 受限环境(DSH sandbox,workspace-write)下构建(2026-09-22 实测可用)
 
