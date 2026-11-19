@@ -43,6 +43,7 @@ import elinarcurios.network.SolidifyVoidChestPacket;
 import elinarcurios.network.SwitchPagePacket;
 import elinarcurios.network.SyncBagPacket;
 import elinarcurios.network.ToggleBuffPacket;
+import elinarcurios.network.WandPoolSyncPacket;
 import elinarcurios.player.PlayerEventHandler;
 import elinarcurios.recipe.FresnelLensRecipes;
 import elinarcurios.recipe.HighTierAssemblyLineRecipes;
@@ -209,6 +210,9 @@ public class CommonProxy {
         net.registerMessage(OpenLunchBoxPacket.class, OpenLunchBoxPacket.Message.class, ids[0]++, Side.SERVER);
         // 午餐盒:进食后只推变化的那一格(服务端 -> 客户端),避免每吃一口重发整个仓库 NBT
         net.registerMessage(LunchBoxEatSync.Handler.class, LunchBoxEatSync.class, ids[0]++, Side.CLIENT);
+        // 天玄之杖:玩家共享魔力池快照(服务端 -> 杖主人客户端)。客户端缓存是 HUD/提示/
+        // 工作台灵气判断的唯一显示来源,保证"工作台一把、手上一把"显示同一个数。
+        net.registerMessage(WandPoolSyncPacket.class, WandPoolSyncPacket.Message.class, ids[0]++, Side.CLIENT);
     }
 
     public void init() {
@@ -250,6 +254,22 @@ public class CommonProxy {
 
     /** Server -> client worn-bag sync (back rendering + wearing state). */
     public void handleSyncBagMessage(final int entityId, final NBTTagCompound data) {}
+
+    /** Server -> client shared wand vis pool (display cache of the local player). */
+    public void handleWandPoolSync(final long[] values, final String ownerName) {}
+
+    // ---- Wand pool client cache (overridden in ClientProxy) ----
+    public boolean hasClientWandPool() {
+        return false;
+    }
+
+    public long getClientWandPool(final int index) {
+        return 0L;
+    }
+
+    public String getClientWandPoolOwner() {
+        return null;
+    }
 
     /** Server -> client buff-flag refresh for the open backpack GUI. */
     public void refreshBuffButtonsIfOpen() {}

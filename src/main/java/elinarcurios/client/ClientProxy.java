@@ -89,4 +89,24 @@ public final class ClientProxy extends CommonProxy {
             ((GuiLunchBox) Minecraft.getMinecraft().currentScreen).refreshPageButtons(page);
         }
     }
+
+    @Override
+    public void handleWandPoolSync(final long[] values, final String ownerName) {
+        WandPoolClient.apply(values, ownerName);
+    }
+
+    @Override
+    public boolean hasClientWandPool() {
+        return WandPoolClient.isValid();
+    }
+
+    @Override
+    public long getClientWandPool(final int index) {
+        return WandPoolClient.get(index);
+    }
+
+    @Override
+    public String getClientWandPoolOwner() {
+        return WandPoolClient.ownerName();
+    }
 }

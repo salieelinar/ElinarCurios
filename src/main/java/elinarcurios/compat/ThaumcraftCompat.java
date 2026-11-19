@@ -4,27 +4,31 @@ import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
 
+import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.registry.GameRegistry;
 import elinarcurios.item.ItemElinarWand;
+import elinarcurios.player.WandPoolTickHandler;
 import thaumcraft.api.wands.WandCap;
 import thaumcraft.api.wands.WandRod;
 
 /**
  * Thaumcraft 软联动:「初心无垠法杖」(rod/cap tag = "elinar")。
  *
- * 设计目标(无作弊、新手友好):
- * - 容量 1000 万:TC 内部按 ×100 计算,getMaxVis() = 10 亿,远低于 int 溢出边界
- * (2,147,483,647),任何充能/消耗都摸不到上限,没有魔力焦虑;
- * - 不挂 IWandRodOnUpdate:没有自动回满机制,vis 只能靠充能台/源质充入;
- * - 新杖 NBT 不含 vis 键,getVis() 返回 0 —— 拿到手是空的,吸多少用多少。
+ * <p>
+ * 2026-11-19 起 vis 改由「玩家共享魔力池」承载(见 {@code elinarcurios.player.WandPool}):
+ * - 杖本身不再限制容量,{@code WAND_CAPACITY} 只是杖杆的标称元数据;真正的池上限是
+ * {@code WandPoolConstants.CAPACITY}(9.2e18 raw);
+ * - 同一个玩家的所有天玄之杖共用一个池,首次使用永久绑定;
+ * - 新杖到手池值为 0,吸多少用多少。
  *
+ * <p>
  * 参考:Avaritia 的 Lucrum.java(同款组装方式,但去掉了 CheatyWandUpdate,
  * 且法杖注册为 elinarcurios 自己的 Item,创造标签/NEI 可见)。
  */
 public final class ThaumcraftCompat {
 
-    /** 法杖 vis 容量(外部单位)。内部实际 = 该值 × 100 = 1,000,000,000。 */
+    /** 杖杆标称容量(外部单位,×100 = rod 的 int 容量)。共享池的真正上限在 WandPoolConstants.CAPACITY。 */
     public static final int WAND_CAPACITY = 10_000_000;
 
     public static WandRod wandRodElinar;
@@ -45,6 +49,12 @@ public final class ThaumcraftCompat {
         if (!isAvailable()) {
             return;
         }
+
+        // 天玄之杖共享魔力池：登录时推一次完整池值，之后每 tick 合并脏标记推一次。
+        // 只在这里注册（TC 专属），避免无 TC 环境加载 WandPool 的 TC 类型。
+        FMLCommonHandler.instance()
+            .bus()
+            .register(new WandPoolTickHandler());
 
         wandRodElinar = new WandRod(
             "elinar",
