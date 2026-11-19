@@ -40,8 +40,8 @@ import thaumcraft.common.items.wands.ItemWandCasting;
 public class ModelElinarWand extends ModelBase {
 
     private static final float CAP_SCALE = 1.15F;
-    private static final int ROD_FRAME_COUNT = 32;
-    private static final int ROD_FRAME_TIME = 15;
+    private static final int ROD_FRAME_COUNT = 128;
+    private static final int ROD_FRAME_TIME = 3;
     private static final ResourceLocation[] ROD_FRAMES = new ResourceLocation[ROD_FRAME_COUNT];
 
     static {
