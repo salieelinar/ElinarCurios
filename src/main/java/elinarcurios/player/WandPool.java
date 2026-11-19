@@ -273,12 +273,9 @@ public final class WandPool {
 
     // ---------------------------------------------------------------- formatting
 
-    /** Formats a raw vis value (x100) as the player sees it, e.g. {@code 1234.56} (no grouping). */
+    /** Formats a raw vis value (x100) as a whole display number, e.g. {@code 123456} (no decimals). */
     public static String format(final long raw) {
         if (raw <= 0L) return "0";
-        final long whole = raw / 100L;
-        final long fraction = raw % 100L;
-        if (fraction == 0L) return Long.toString(whole);
-        return whole + (fraction < 10L ? ".0" : ".") + fraction;
+        return Long.toString(raw / 100L);
     }
 }
