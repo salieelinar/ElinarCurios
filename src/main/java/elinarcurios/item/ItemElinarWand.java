@@ -1,6 +1,5 @@
 package elinarcurios.item;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -96,44 +95,27 @@ public class ItemElinarWand extends ItemWandCasting {
             : StatCollector.translateToLocalFormatted("item.elinarcurios.wand.bound", owner);
         tooltip.add("§b" + StatCollector.translateToLocal("item.elinarcurios.wand.pool") + " §7" + binding);
 
-        final Map<String, Long> stored = storedAspects(stack);
-        final boolean shift = Thaumcraft.proxy.isShiftKeyDown();
-        if (shift) {
+        for (final Aspect aspect : WandPool.PRIMALS) {
             tooltip.add(
-                "§7" + StatCollector.translateToLocal("item.elinarcurios.wand.capacity")
-                    + " §f"
-                    + WandPool.format(WandPoolConstants.CAPACITY)
-                    + " §7"
-                    + StatCollector.translateToLocal("item.elinarcurios.wand.eachelement"));
-            for (final Aspect aspect : WandPool.PRIMALS) {
-                tooltip.add(
-                    " §" + aspect.getChatcolor()
-                        + aspectName(aspect)
-                        + " §f"
-                        + WandPool.format(displayPool(stack, aspect)));
-            }
-            for (final Map.Entry<String, Long> other : otherAspects(stored)) {
-                final Aspect aspect = Aspect.getAspect(other.getKey());
-                final String name = aspect == null ? other.getKey() : aspectName(aspect);
-                final String color = aspect == null ? "7" : aspect.getChatcolor();
-                tooltip.add(" §" + color + name + " §f" + WandPool.format(other.getValue()));
-            }
-        } else {
-            final StringBuilder line = new StringBuilder();
-            for (final Aspect aspect : WandPool.PRIMALS) {
-                if (line.length() > 0) line.append(" §7|§r");
-                line.append("§")
-                    .append(aspect.getChatcolor())
-                    .append(WandPool.format(displayPool(stack, aspect)));
-            }
-            final int others = otherAspects(stored).size();
-            if (others > 0) {
-                line.append(" §7(+")
-                    .append(others)
-                    .append(")");
-            }
-            tooltip.add(line.toString());
+                "§" + aspect.getChatcolor()
+                    + StatCollector.translateToLocalFormatted(
+                        "item.elinarcurios.wand.aspectLine",
+                        aspectName(aspect),
+                        aspect.getName()));
+            tooltip.add("§f" + WandPool.format(displayPool(stack, aspect)));
         }
+
+        final Map<String, Long> stored = storedAspects(stack);
+        int types = 0;
+        long total = 0L;
+        for (final Long value : stored.values()) {
+            if (value == null || value <= 0L) continue;
+            types++;
+            total = saturatedAdd(total, value);
+        }
+        tooltip.add(StatCollector.translateToLocalFormatted("item.elinarcurios.wand.totalTypes", types));
+        tooltip
+            .add(StatCollector.translateToLocalFormatted("item.elinarcurios.wand.totalAmount", WandPool.format(total)));
 
         final ItemFocusBasic focus = getFocus(stack);
         if (focus != null) {
@@ -143,7 +125,7 @@ public class ItemElinarWand extends ItemWandCasting {
                     + ""
                     + EnumChatFormatting.GREEN
                     + focus.getItemStackDisplayName(getFocusItem(stack)));
-            if (shift) {
+            if (Thaumcraft.proxy.isShiftKeyDown()) {
                 focus.addFocusInformation(getFocusItem(stack), player, tooltip, advanced);
             }
         }
@@ -156,18 +138,10 @@ public class ItemElinarWand extends ItemWandCasting {
         return comma > 0 ? localized.substring(0, comma) : localized;
     }
 
-    /** Non-primal aspects that actually have a stored value, sorted for a stable tooltip. */
-    private static List<Map.Entry<String, Long>> otherAspects(final Map<String, Long> stored) {
-        final List<Map.Entry<String, Long>> out = new ArrayList<Map.Entry<String, Long>>();
-        for (final Map.Entry<String, Long> entry : stored.entrySet()) {
-            if (entry.getValue() == null || entry.getValue() <= 0L) continue;
-            if (WandPool.isPrimalTag(entry.getKey())) continue;
-            out.add(entry);
-        }
-        out.sort(
-            (a, b) -> a.getKey()
-                .compareTo(b.getKey()));
-        return out;
+    /** Saturated positive addition; the per-aspect cap makes a plain sum able to overflow a long. */
+    private static long saturatedAdd(final long a, final long b) {
+        final long sum = a + b;
+        return sum < 0L ? Long.MAX_VALUE : sum;
     }
 
     // ---------------------------------------------------------------- vis storage bridge

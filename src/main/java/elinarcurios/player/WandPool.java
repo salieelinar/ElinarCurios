@@ -56,15 +56,6 @@ public final class WandPool {
 
     // ---------------------------------------------------------------- aspects
 
-    public static boolean isPrimalTag(final String tag) {
-        if (tag == null) return false;
-        for (final Aspect aspect : PRIMALS) {
-            if (aspect.getTag()
-                .equals(tag)) return true;
-        }
-        return false;
-    }
-
     public static long clamp(final long value) {
         if (value <= 0L) return 0L;
         return value >= WandPoolConstants.CAPACITY ? WandPoolConstants.CAPACITY : value;
@@ -79,14 +70,14 @@ public final class WandPool {
 
     /** Non-zero aspects stored for one player (empty when unknown). */
     public static Map<String, Long> poolFor(final UUID id) {
-        final WandPoolData data = WandPoolData.get();
+        final WandPoolData data = WandPoolStorage.data();
         return data == null ? new HashMap<String, Long>() : data.snapshot(id);
     }
 
     /** Server-side pool read for a wand, online or offline. Client must use its synced cache. */
     public static long getForOwner(final ItemStack stack, final Aspect aspect) {
         if (aspect == null) return 0L;
-        final WandPoolData data = WandPoolData.get();
+        final WandPoolData data = WandPoolStorage.data();
         final UUID id = ownerId(stack);
         return data == null || id == null ? 0L : data.get(id, aspect.getTag());
     }
@@ -96,7 +87,7 @@ public final class WandPool {
         if (aspect == null) return;
         final UUID id = ownerId(stack);
         if (id == null) return;
-        final WandPoolData data = WandPoolData.get();
+        final WandPoolData data = WandPoolStorage.data();
         if (data == null) return;
         if (data.set(id, aspect.getTag(), value)) DIRTY.add(id);
     }
@@ -152,7 +143,7 @@ public final class WandPool {
 
         final UUID id = player.getUniqueID();
         final NBTTagCompound tag = ensureTag(stack);
-        final WandPoolData data = WandPoolData.get();
+        final WandPoolData data = WandPoolStorage.data();
         if (data != null) {
             for (final Aspect aspect : PRIMALS) {
                 if (!tag.hasKey(aspect.getTag(), 3)) continue;
@@ -180,7 +171,7 @@ public final class WandPool {
         if (!persisted.hasKey(WandPoolConstants.PLAYER_POOL_TAG, 10)) return;
 
         final UUID id = player.getUniqueID();
-        final WandPoolData store = WandPoolData.get();
+        final WandPoolData store = WandPoolStorage.data();
         if (store != null && !store.has(id)) {
             final NBTTagCompound old = persisted.getCompoundTag(WandPoolConstants.PLAYER_POOL_TAG);
             for (final Aspect aspect : PRIMALS) {

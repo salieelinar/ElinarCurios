@@ -45,6 +45,7 @@ import elinarcurios.network.SyncBagPacket;
 import elinarcurios.network.ToggleBuffPacket;
 import elinarcurios.network.WandPoolSyncPacket;
 import elinarcurios.player.PlayerEventHandler;
+import elinarcurios.player.WandPoolSaveHandler;
 import elinarcurios.recipe.FresnelLensRecipes;
 import elinarcurios.recipe.HighTierAssemblyLineRecipes;
 import elinarcurios.recipe.ReactorCoreRecipes;
@@ -146,8 +147,13 @@ public class CommonProxy {
             .bus()
             .register(playerEventHandler);
 
-        // 天玄之杖的池子存在世界级 WandPoolData（UUID -> 要素表）里，随世界存档保存，
-        // 主人离线时机器也能直接读写；不需要额外的落盘 tick handler。
+        // 天玄之杖池：世界级数据，自管原子写（temp+fsync+ATOMIC_MOVE）。周期性落盘 + 世界保存时落盘；
+        // 停服/退档由 ElinarCurios 的生命周期处理。与 TC 无关（无数据时纯 no-op）。
+        final WandPoolSaveHandler wandPoolSaveHandler = new WandPoolSaveHandler();
+        MinecraftForge.EVENT_BUS.register(wandPoolSaveHandler);
+        FMLCommonHandler.instance()
+            .bus()
+            .register(wandPoolSaveHandler);
 
         // 幽灵模式：服务端每 tick 刷新"幽灵玩家"集合，并每 5 tick 清一次已锁定的怪物仇恨。
         // 纯 FML 事件（TickEvent），只挂 FML 总线。

@@ -6,9 +6,7 @@ import java.util.UUID;
 
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
-import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.WorldSavedData;
-import net.minecraft.world.WorldServer;
 
 import elinarcurios.util.WandPoolConstants;
 
@@ -21,7 +19,8 @@ import elinarcurios.util.WandPoolConstants;
  * <li>works for offline owners (machines keep consuming their pool after they log off);</li>
  * <li>supports <b>any</b> Thaumcraft aspect, not just the six primals — the pool is a
  * {@code tag -> long} map, so later mechanics can store compound/custom aspects too;</li>
- * <li>is saved with the world through {@link WorldSavedData} (no bespoke I/O, no flush thread).</li>
+ * <li>is persisted by {@link WandPoolStorage} with an atomic write (temp file + fsync + rename),
+ * unlike vanilla {@code MapStorage}'s non-atomic overwrite.</li>
  * </ul>
  *
  * <p>
@@ -46,20 +45,6 @@ public final class WandPoolData extends WorldSavedData {
 
     public WandPoolData(final String name) {
         super(name);
-    }
-
-    /** World-wide instance stored on the overworld's map storage (shared by every dimension). */
-    public static WandPoolData get() {
-        final MinecraftServer server = MinecraftServer.getServer();
-        if (server == null) return null;
-        final WorldServer overworld = server.worldServerForDimension(0);
-        if (overworld == null || overworld.mapStorage == null) return null;
-        WandPoolData data = (WandPoolData) overworld.mapStorage.loadData(WandPoolData.class, NAME);
-        if (data == null) {
-            data = new WandPoolData(NAME);
-            overworld.mapStorage.setData(NAME, data);
-        }
-        return data;
     }
 
     public long get(final UUID id, final String tag) {

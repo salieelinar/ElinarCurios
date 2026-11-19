@@ -19,6 +19,7 @@ import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerStartingEvent;
 import cpw.mods.fml.common.event.FMLServerStoppedEvent;
+import cpw.mods.fml.common.event.FMLServerStoppingEvent;
 import cpw.mods.fml.common.network.NetworkCheckHandler;
 import cpw.mods.fml.common.network.NetworkRegistry;
 import cpw.mods.fml.common.network.simpleimpl.SimpleNetworkWrapper;
@@ -74,10 +75,17 @@ public final class ElinarCurios {
         event.registerServerCommand(new elinarcurios.command.CommandElinar());
     }
 
-    /** 退档 / 服务器停止：清空束流虚空的 UUID 注册表，避免跨存档留下死引用。 */
+    /** 停服前把天玄之杖池的脏数据落盘（此时世界目录仍然有效）。 */
+    @Mod.EventHandler
+    public void serverStopping(final FMLServerStoppingEvent event) {
+        elinarcurios.player.WandPoolStorage.saveIfDirty();
+    }
+
+    /** 退档 / 服务器停止：清空束流虚空的 UUID 注册表，避免跨存档留下死引用；清掉杖池缓存。 */
     @Mod.EventHandler
     public void serverStopped(final FMLServerStoppedEvent event) {
         elinarcurios.machine.BeamVoidStorageRegistry.clear();
+        elinarcurios.player.WandPoolStorage.reset();
     }
 
     @NetworkCheckHandler
