@@ -17,16 +17,22 @@ import elinarcurios.block.BlockElinarLight;
 import elinarcurios.item.ItemElinarWand;
 
 /**
- * Makes holding the Celestial Wand light the surroundings like a torch (light level 14).
+ * Makes the Celestial Wand light the surroundings like a torch (light level 14) while it is
+ * held, or while it sits in a slot of the container the player currently has open (arcane
+ * workbench wand slot, infinite backpack GUI, chest, ...).
  *
  * <p>
- * One invisible {@link BlockElinarLight} is kept at the holder's feet (or just above the head
- * when the feet block is occupied); it is moved as the player moves and removed when the wand
- * is no longer held. Every server tick only a single block comparison happens per holder.
+ * One invisible {@link BlockElinarLight} is kept at the feet (or just above the head, or at a
+ * free side block when the player is in a tight space); it is moved as the player moves and
+ * removed when the wand is no longer carried.
  */
 public final class ElinarWandLightHandler {
 
+    /** Temporary diagnostics: one line per container/carry-state change, to be removed later. */
+    private static final boolean DEBUG = true;
+
     private static final Map<UUID, LightRef> ACTIVE = new HashMap<UUID, LightRef>();
+    private static final Map<UUID, String> LAST_DEBUG = new HashMap<UUID, String>();
 
     private ElinarWandLightHandler() {}
 
@@ -38,9 +44,10 @@ public final class ElinarWandLightHandler {
     }
 
     /**
-     * A wand counts as "carried" when it is held, or when it sits in a non-player slot of the
-     * container the player currently has open (arcane workbench wand slot, infinite backpack
-     * crafting grid, chest, etc.). In those cases the area around the player should stay lit.
+     * A wand counts as "carried" when it is held, or when it is in any slot of the container
+     * the player currently has open. We deliberately do not skip the player-inventory slots:
+     * some custom GUIs (infinite backpack, portable crafting) back their visible slots with the
+     * player's inventory, and skipping them made the light disappear while the GUI was open.
      */
     public static boolean hasWand(final EntityPlayer player) {
         if (player == null) return false;
@@ -49,7 +56,6 @@ public final class ElinarWandLightHandler {
         if (player.openContainer == null) return false;
         for (final Object object : player.openContainer.inventorySlots) {
             final Slot slot = (Slot) object;
-            if (slot.inventory == player.inventory) continue; // skip the player's own inventory
             final ItemStack stack = slot.getStack();
             if (stack != null && stack.getItem() instanceof ItemElinarWand) return true;
         }
@@ -64,8 +70,10 @@ public final class ElinarWandLightHandler {
             final EntityPlayer player = event.player;
             if (player.worldObj == null || player.worldObj.isRemote) return;
 
-            if (!hasWand(player) || player.isDead) {
+            final boolean hasWand = hasWand(player);
+            if (!hasWand || player.isDead) {
                 clear(player);
+                maybeLog(player, false, Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE);
                 return;
             }
 
@@ -75,35 +83,92 @@ public final class ElinarWandLightHandler {
             final int feetY = MathHelper.floor_double(player.posY + 0.1D);
             final int headY = MathHelper.floor_double(player.posY + player.getEyeHeight());
 
-            int y = Integer.MIN_VALUE;
-            if (isFree(world, x, feetY, z)) {
-                y = feetY;
-            } else if (isFree(world, x, headY + 1, z)) {
-                y = headY + 1;
+            // Feet first, then above the head, then the four horizontal neighbours at feet
+            // level (covers standing in a slab / low room / machine casing).
+            final int[] dx = { 0, 0, 1, -1, 0, 0 };
+            final int[] dz = { 0, 0, 0, 0, 1, -1 };
+            final int[] dy = { feetY, headY + 1, feetY, feetY, feetY, feetY };
+            int lightX = x;
+            int lightY = Integer.MIN_VALUE;
+            int lightZ = z;
+            for (int i = 0; i < dx.length; i++) {
+                final int tx = x + dx[i];
+                final int tz = z + dz[i];
+                final int ty = dy[i];
+                if (isFree(world, tx, ty, tz)) {
+                    lightX = tx;
+                    lightY = ty;
+                    lightZ = tz;
+                    break;
+                }
             }
-            if (y == Integer.MIN_VALUE) {
+            if (lightY == Integer.MIN_VALUE) {
                 clear(player);
+                maybeLog(player, true, lightX, lightY, lightZ);
                 return;
             }
 
             final LightRef old = ACTIVE.get(player.getUniqueID());
-            if (old != null && old.world == world && old.x == x && old.y == y && old.z == z) {
+            if (old != null && old.world == world && old.x == lightX && old.y == lightY && old.z == lightZ) {
                 // Re-place if the light block was removed/replaced while the ref stayed.
-                if (world.getBlock(x, y, z) != BlockElinarLight.instance) {
-                    world.setBlock(x, y, z, BlockElinarLight.instance, 0, 3);
+                if (world.getBlock(lightX, lightY, lightZ) != BlockElinarLight.instance) {
+                    world.setBlock(lightX, lightY, lightZ, BlockElinarLight.instance, 0, 3);
                 }
+                maybeLog(player, true, lightX, lightY, lightZ);
                 return;
             }
 
             clear(player);
-            world.setBlock(x, y, z, BlockElinarLight.instance, 0, 3);
-            ACTIVE.put(player.getUniqueID(), new LightRef(world, x, y, z));
+            world.setBlock(lightX, lightY, lightZ, BlockElinarLight.instance, 0, 3);
+            ACTIVE.put(player.getUniqueID(), new LightRef(world, lightX, lightY, lightZ));
+            maybeLog(player, true, lightX, lightY, lightZ);
         }
 
         @SubscribeEvent
         public void onLoggedOut(final PlayerLoggedOutEvent event) {
             clear(event.player);
+            if (event.player != null) LAST_DEBUG.remove(event.player.getUniqueID());
         }
+    }
+
+    private static void maybeLog(final EntityPlayer player, final boolean hasWand, final int x, final int y,
+        final int z) {
+        if (!DEBUG) return;
+        final String container = player.openContainer == null ? "null"
+            : player.openContainer.getClass()
+                .getName();
+        final StringBuilder key = new StringBuilder().append(hasWand)
+            .append('|')
+            .append(container);
+        if (player.openContainer != null) {
+            for (final Object object : player.openContainer.inventorySlots) {
+                final Slot slot = (Slot) object;
+                final ItemStack stack = slot.getStack();
+                if (stack != null && stack.getItem() instanceof ItemElinarWand) {
+                    key.append('|')
+                        .append(slot.slotNumber)
+                        .append(':')
+                        .append(
+                            slot.inventory.getClass()
+                                .getName());
+                }
+            }
+        }
+        final String keyString = key.toString();
+        if (keyString.equals(LAST_DEBUG.get(player.getUniqueID()))) return;
+        LAST_DEBUG.put(player.getUniqueID(), keyString);
+        final StringBuilder line = new StringBuilder("[ElinarLight] hasWand=").append(hasWand)
+            .append(" container=")
+            .append(container)
+            .append(" light=")
+            .append(x)
+            .append(',')
+            .append(y)
+            .append(',')
+            .append(z)
+            .append(" key=")
+            .append(keyString);
+        System.out.println(line);
     }
 
     private static boolean isFree(final World world, final int x, final int y, final int z) {
@@ -129,6 +194,7 @@ public final class ElinarWandLightHandler {
             clear(ref);
         }
         ACTIVE.clear();
+        LAST_DEBUG.clear();
     }
 
     private static final class LightRef {
