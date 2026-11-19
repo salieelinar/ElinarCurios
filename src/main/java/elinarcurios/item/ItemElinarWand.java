@@ -113,9 +113,8 @@ public class ItemElinarWand extends ItemWandCasting {
             types++;
             total = saturatedAdd(total, value);
         }
-        tooltip.add(StatCollector.translateToLocalFormatted("item.elinarcurios.wand.totalTypes", types));
-        tooltip
-            .add(StatCollector.translateToLocalFormatted("item.elinarcurios.wand.totalAmount", WandPool.format(total)));
+        tooltip.add(StatCollector.translateToLocalFormatted("item.elinarcurios.wand.totalLine", types));
+        tooltip.add("§f" + WandPool.format(total));
 
         final ItemFocusBasic focus = getFocus(stack);
         if (focus != null) {
@@ -132,6 +131,9 @@ public class ItemElinarWand extends ItemWandCasting {
     }
 
     private static String aspectName(final Aspect aspect) {
+        final String key = "item.elinarcurios.wand.aspect." + aspect.getTag();
+        final String translated = StatCollector.translateToLocal(key);
+        if (!key.equals(translated)) return translated;
         final String localized = aspect.getLocalizedDescription();
         if (localized == null || localized.isEmpty()) return aspect.getName();
         final int comma = localized.indexOf(',');
