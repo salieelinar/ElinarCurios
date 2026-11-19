@@ -90,11 +90,13 @@ public class ItemElinarWand extends ItemWandCasting {
     public void addInformation(final ItemStack stack, final EntityPlayer player, final List tooltip,
         final boolean advanced) {
         tooltip.add(StatCollector.translateToLocal("item.elinarcurios.wand.tooltip"));
+        tooltip.add(StatCollector.translateToLocal("item.elinarcurios.wand.desc"));
+        tooltip.add(StatCollector.translateToLocal("item.elinarcurios.wand.mechanics"));
 
         final String owner = WandPool.ownerName(stack);
         final String binding = owner == null ? StatCollector.translateToLocal("item.elinarcurios.wand.unbound")
             : StatCollector.translateToLocalFormatted("item.elinarcurios.wand.bound", owner);
-        tooltip.add("§b" + StatCollector.translateToLocal("item.elinarcurios.wand.pool") + " §7" + binding);
+        tooltip.add(binding);
 
         // One snapshot for the whole tooltip: the client pool map is volatile and the sync thread
         // may swap it between reads; using it for both the six rows and the total keeps them
@@ -271,6 +273,13 @@ public class ItemElinarWand extends ItemWandCasting {
             WandPool.writeSnapshotFor(stack);
         }
         return amount - accepted;
+    }
+
+    @Override
+    public float getConsumptionModifier(final ItemStack stack, final EntityPlayer player, final Aspect aspect,
+        final boolean crafting) {
+        // The late-game Celestial Wand pays 10% of the normal vis cost (90% reduction).
+        return 0.1F;
     }
 
     @Override
