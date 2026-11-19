@@ -1,6 +1,8 @@
 package elinarcurios.item;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import net.minecraft.creativetab.CreativeTabs;
 import net.minecraft.entity.Entity;
@@ -34,7 +36,8 @@ import thaumcraft.common.items.wands.ItemWandCasting;
  * <p>
  * 2026-11-19 起 vis 改为「玩家共享魔力池」:
  * <ul>
- * <li>池子存在玩家 {@code PlayerPersisted} 里(6 x long),死亡/换维度不丢;</li>
+ * <li>池子存在世界级 {@code WandPoolData}(UUID -> 要素表),主人下线后机器仍能扣;</li>
+ * <li>支持<b>所有</b>要素(不限于 6 种基础要素),为后续机制预留;</li>
  * <li>杖本身只存「绑定玩家 UUID + 显示快照」,同一个玩家的所有天玄之杖共用同一个池;</li>
  * <li>首次使用永久绑定(杖可能被放进奥术工作台/附魔器等没有玩家上下文的机器里);</li>
  * <li>客户端显示统一读 {@code WandPoolSyncPacket} 推来的缓存,所以「工作台一把、手上一把」
@@ -93,6 +96,7 @@ public class ItemElinarWand extends ItemWandCasting {
             : StatCollector.translateToLocalFormatted("item.elinarcurios.wand.bound", owner);
         tooltip.add("§b" + StatCollector.translateToLocal("item.elinarcurios.wand.pool") + " §7" + binding);
 
+        final Map<String, Long> stored = storedAspects(stack);
         final boolean shift = Thaumcraft.proxy.isShiftKeyDown();
         if (shift) {
             tooltip.add(
@@ -108,6 +112,12 @@ public class ItemElinarWand extends ItemWandCasting {
                         + " §f"
                         + WandPool.format(displayPool(stack, aspect)));
             }
+            for (final Map.Entry<String, Long> other : otherAspects(stored)) {
+                final Aspect aspect = Aspect.getAspect(other.getKey());
+                final String name = aspect == null ? other.getKey() : aspectName(aspect);
+                final String color = aspect == null ? "7" : aspect.getChatcolor();
+                tooltip.add(" §" + color + name + " §f" + WandPool.format(other.getValue()));
+            }
         } else {
             final StringBuilder line = new StringBuilder();
             for (final Aspect aspect : WandPool.PRIMALS) {
@@ -115,6 +125,12 @@ public class ItemElinarWand extends ItemWandCasting {
                 line.append("§")
                     .append(aspect.getChatcolor())
                     .append(WandPool.format(displayPool(stack, aspect)));
+            }
+            final int others = otherAspects(stored).size();
+            if (others > 0) {
+                line.append(" §7(+")
+                    .append(others)
+                    .append(")");
             }
             tooltip.add(line.toString());
         }
@@ -140,6 +156,20 @@ public class ItemElinarWand extends ItemWandCasting {
         return comma > 0 ? localized.substring(0, comma) : localized;
     }
 
+    /** Non-primal aspects that actually have a stored value, sorted for a stable tooltip. */
+    private static List<Map.Entry<String, Long>> otherAspects(final Map<String, Long> stored) {
+        final List<Map.Entry<String, Long>> out = new ArrayList<Map.Entry<String, Long>>();
+        for (final Map.Entry<String, Long> entry : stored.entrySet()) {
+            if (entry.getValue() == null || entry.getValue() <= 0L) continue;
+            if (WandPool.isPrimalTag(entry.getKey())) continue;
+            out.add(entry);
+        }
+        out.sort(
+            (a, b) -> a.getKey()
+                .compareTo(b.getKey()));
+        return out;
+    }
+
     // ---------------------------------------------------------------- vis storage bridge
 
     /**
@@ -154,22 +184,17 @@ public class ItemElinarWand extends ItemWandCasting {
 
     @Override
     public int getVis(final ItemStack stack, final Aspect aspect) {
-        if (aspect == null || !aspect.isPrimal()) return super.getVis(stack, aspect);
+        if (aspect == null) return super.getVis(stack, aspect);
         return WandPool.face(displayPool(stack, aspect));
     }
 
     @Override
     public void storeVis(final ItemStack stack, final Aspect aspect, final int amount) {
-        if (aspect == null || !aspect.isPrimal()) {
-            super.storeVis(stack, aspect, amount);
-            return;
-        }
+        if (aspect == null) return;
         if (!isServerSide()) return; // authoritative value arrives through WandPoolSyncPacket
+        if (!WandPool.hasOwner(stack)) return;
 
-        final EntityPlayer owner = WandPool.resolveOwner(stack);
-        if (owner == null) return;
-
-        final long current = WandPool.get(owner, aspect);
+        final long current = WandPool.getForOwner(stack, aspect);
         final long next;
         if (amount < 0) {
             // int overflow from a read-modify-write on a clamped value: never corrupt the pool.
@@ -183,8 +208,8 @@ public class ItemElinarWand extends ItemWandCasting {
         } else {
             next = amount;
         }
-        WandPool.set(owner, aspect, next);
-        WandPool.writeSnapshot(stack, owner);
+        WandPool.setForOwner(stack, aspect, next);
+        WandPool.writeSnapshotFor(stack);
     }
 
     @Override
@@ -196,26 +221,22 @@ public class ItemElinarWand extends ItemWandCasting {
 
     @Override
     public void storeAllVis(final ItemStack stack, final AspectList aspects) {
-        if (aspects == null || !isServerSide()) return;
-        final EntityPlayer owner = WandPool.resolveOwner(stack);
-        if (owner == null) return;
+        if (aspects == null || !isServerSide() || !WandPool.hasOwner(stack)) return;
         for (final Aspect aspect : aspects.getAspects()) {
-            if (aspect == null || !aspect.isPrimal()) continue;
-            WandPool.set(owner, aspect, aspects.getAmount(aspect));
+            if (aspect == null) continue;
+            WandPool.setForOwner(stack, aspect, aspects.getAmount(aspect));
         }
-        WandPool.writeSnapshot(stack, owner);
+        WandPool.writeSnapshotFor(stack);
     }
 
     @Override
     public AspectList getAspectsWithRoom(final ItemStack stack) {
         final AspectList out = new AspectList();
-        final String ownerName = WandPool.ownerName(stack);
-        if (ownerName == null) return out; // unbound: never charge
+        if (WandPool.ownerName(stack) == null) return out; // unbound: never charge
         if (isServerSide()) {
-            final EntityPlayer owner = WandPool.resolveOwner(stack);
-            if (owner == null) return out; // owner offline: do not let pedestals drain nodes into nothing
+            if (!WandPool.isOwnerAccessible(stack)) return out;
             for (final Aspect aspect : WandPool.PRIMALS) {
-                if (WandPool.get(owner, aspect) < WandPoolConstants.CAPACITY) out.add(aspect, 1);
+                if (WandPool.getForOwner(stack, aspect) < WandPoolConstants.CAPACITY) out.add(aspect, 1);
             }
         } else {
             for (final Aspect aspect : WandPool.PRIMALS) {
@@ -227,19 +248,19 @@ public class ItemElinarWand extends ItemWandCasting {
 
     @Override
     public int addVis(final ItemStack stack, final Aspect aspect, final int amount, final boolean doit) {
-        if (aspect == null || !aspect.isPrimal() || amount <= 0) return 0;
+        if (aspect == null || amount <= 0) return 0;
         final long leftover = addRaw(stack, aspect, (long) amount * 100L, doit);
         return (int) Math.min(leftover / 100L, (long) Integer.MAX_VALUE);
     }
 
     @Override
     public int addRealVis(final ItemStack stack, final Aspect aspect, final int amount, final boolean doit) {
-        if (aspect == null || !aspect.isPrimal() || amount <= 0) return 0;
+        if (aspect == null || amount <= 0) return 0;
         final long leftover = addRaw(stack, aspect, amount, doit);
         return (int) Math.min(leftover, (long) Integer.MAX_VALUE);
     }
 
-    /** Adds {@code amount} raw vis and returns the raw leftover. */
+    /** Adds {@code amount} raw vis of ANY aspect and returns the raw leftover. */
     private long addRaw(final ItemStack stack, final Aspect aspect, final long amount, final boolean doit) {
         if (!isServerSide()) {
             // Display-only estimate; the server owns the pool and syncs the real value.
@@ -248,13 +269,12 @@ public class ItemElinarWand extends ItemWandCasting {
                 .max(0L, Math.min(amount, WandPoolConstants.CAPACITY - Math.min(current, WandPoolConstants.CAPACITY)));
             return amount - accepted;
         }
-        final EntityPlayer owner = WandPool.resolveOwner(stack);
-        if (owner == null) return amount;
-        final long current = WandPool.get(owner, aspect);
+        if (!WandPool.isOwnerAccessible(stack)) return amount;
+        final long current = WandPool.getForOwner(stack, aspect);
         final long accepted = Math.max(0L, Math.min(amount, WandPoolConstants.CAPACITY - current));
         if (doit && accepted > 0L) {
-            WandPool.set(owner, aspect, current + accepted);
-            WandPool.writeSnapshot(stack, owner);
+            WandPool.setForOwner(stack, aspect, current + accepted);
+            WandPool.writeSnapshotFor(stack);
         }
         return amount - accepted;
     }
@@ -262,16 +282,15 @@ public class ItemElinarWand extends ItemWandCasting {
     @Override
     public boolean consumeVis(final ItemStack stack, final EntityPlayer player, final Aspect aspect, final int amount,
         final boolean crafting) {
-        if (aspect == null || !aspect.isPrimal()) return super.consumeVis(stack, player, aspect, amount, crafting);
+        if (aspect == null) return false;
         final int cost = (int) (amount * getConsumptionModifier(stack, player, aspect, crafting));
         if (!isServerSide()) return displayPool(stack, aspect) >= cost;
 
-        final EntityPlayer owner = ownerForUse(stack, player);
-        if (owner == null) return false;
-        final long current = WandPool.get(owner, aspect);
+        if (!ensureAccessible(stack, player)) return false;
+        final long current = WandPool.getForOwner(stack, aspect);
         if (current < cost) return false;
-        WandPool.set(owner, aspect, current - cost);
-        WandPool.writeSnapshot(stack, owner);
+        WandPool.setForOwner(stack, aspect, current - cost);
+        WandPool.writeSnapshotFor(stack);
         return true;
     }
 
@@ -296,28 +315,27 @@ public class ItemElinarWand extends ItemWandCasting {
             return true;
         }
 
-        final EntityPlayer owner = ownerForUse(stack, player);
-        if (owner == null) return false;
+        if (!ensureAccessible(stack, player)) return false;
         for (final Aspect aspect : cost.getAspects()) {
-            if (WandPool.get(owner, aspect) < cost.getAmount(aspect)) return false;
+            if (WandPool.getForOwner(stack, aspect) < cost.getAmount(aspect)) return false;
         }
         if (doit) {
             for (final Aspect aspect : cost.getAspects()) {
-                WandPool.set(owner, aspect, WandPool.get(owner, aspect) - cost.getAmount(aspect));
+                WandPool.setForOwner(stack, aspect, WandPool.getForOwner(stack, aspect) - cost.getAmount(aspect));
             }
-            WandPool.writeSnapshot(stack, owner);
+            WandPool.writeSnapshotFor(stack);
         }
         return true;
     }
 
-    /** Owner for a use: binds an unbound wand to the acting (server) player on first use. */
-    private static EntityPlayer ownerForUse(final ItemStack stack, final EntityPlayer player) {
-        EntityPlayer owner = WandPool.resolveOwner(stack);
-        if (owner == null && player != null) {
-            WandPool.bind(stack, player);
-            owner = WandPool.resolveOwner(stack);
-        }
-        return owner;
+    /**
+     * Binds an unbound wand to the acting (server) player on first use, then reports whether the
+     * owner's pool is reachable — the world database works online and offline alike.
+     */
+    private static boolean ensureAccessible(final ItemStack stack, final EntityPlayer player) {
+        if (WandPool.isOwnerAccessible(stack)) return true;
+        if (player != null) WandPool.bind(stack, player);
+        return WandPool.isOwnerAccessible(stack);
     }
 
     // ---------------------------------------------------------------- lifecycle / binding
@@ -369,24 +387,31 @@ public class ItemElinarWand extends ItemWandCasting {
      * Current pool value used for display.
      *
      * <p>
-     * Server: the online owner's pool; when the owner is offline the pool is unreachable, so this returns
-     * 0 instead of the snapshot. That matters for third-party blocks that do
-     * {@code if (getVis() >= cost) storeVis(getVis() - cost)} — returning the snapshot would let them
-     * "craft" and silently fail to charge. Client: the synced cache when this wand belongs to the local
-     * player, otherwise the item's own snapshot (foreign wands, display only).
+     * Server: the world database (works for online and offline owners). Client: the synced cache when
+     * this wand belongs to the local player, otherwise the item's own snapshot (foreign wands).
      */
     private static long displayPool(final ItemStack stack, final Aspect aspect) {
-        if (isServerSide()) {
-            final EntityPlayer owner = WandPool.resolveOwner(stack);
-            return owner != null ? WandPool.get(owner, aspect) : 0L;
-        }
+        if (aspect == null) return 0L;
+        if (isServerSide()) return WandPool.getForOwner(stack, aspect);
+
         final String owner = WandPool.ownerName(stack);
         if (owner != null && ElinarCurios.proxy.hasClientWandPool()) {
             final String local = ElinarCurios.proxy.getClientWandPoolOwner();
             if (local != null && owner.equalsIgnoreCase(local)) {
-                return ElinarCurios.proxy.getClientWandPool(WandPool.indexOf(aspect));
+                return ElinarCurios.proxy.getClientWandPool(aspect.getTag());
             }
         }
         return WandPool.snapshot(stack, aspect);
+    }
+
+    /** All non-zero aspects for the tooltip: server database, client cache, or the item snapshot. */
+    private static Map<String, Long> storedAspects(final ItemStack stack) {
+        if (isServerSide()) return WandPool.storedForOwner(stack);
+        final String owner = WandPool.ownerName(stack);
+        if (owner != null && ElinarCurios.proxy.hasClientWandPool()) {
+            final String local = ElinarCurios.proxy.getClientWandPoolOwner();
+            if (local != null && owner.equalsIgnoreCase(local)) return ElinarCurios.proxy.getClientWandPoolMap();
+        }
+        return WandPool.snapshotAll(stack);
     }
 }

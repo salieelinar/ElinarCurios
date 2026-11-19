@@ -1,34 +1,33 @@
 package elinarcurios.client;
 
-import elinarcurios.util.WandPoolConstants;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * Client-side copy of the local player's shared wand vis pool.
+ * Client-side copy of the local player's shared wand pool.
  *
  * <p>
- * The authoritative pool lives in the server player's data. This cache is fed by
+ * The authoritative pool lives in the server's world-level database. This cache is fed by
  * {@code WandPoolSyncPacket} and is the single display source for every Celestial Wand the local
  * player owns — no matter whether the wand is in hand, in a chest, in the arcane workbench or in an
  * enchanter. That is what keeps two wands in two different inventories showing the same number.
  *
  * <p>
- * The packet handler runs on the client network thread while the HUD/tooltip read on the render
- * thread, so the array is published through a volatile reference (write a fresh copy, then swap).
+ * Keyed by aspect tag so compound/custom aspects work exactly like the six primals. The packet
+ * handler runs on the client network thread while the HUD/tooltip read on the render thread, so the
+ * map is published through a volatile reference (build a fresh map, then swap).
  */
 public final class WandPoolClient {
 
-    private static volatile long[] pool = new long[WandPoolConstants.ASPECT_COUNT];
+    private static volatile Map<String, Long> pool = Collections.emptyMap();
     private static volatile String ownerName = "";
     private static volatile boolean valid;
 
     private WandPoolClient() {}
 
-    public static void apply(final long[] values, final String owner) {
-        final long[] copy = new long[WandPoolConstants.ASPECT_COUNT];
-        if (values != null) {
-            System.arraycopy(values, 0, copy, 0, Math.min(values.length, copy.length));
-        }
-        pool = copy;
+    public static void apply(final Map<String, Long> values, final String owner) {
+        pool = values == null ? Collections.<String, Long>emptyMap() : new HashMap<String, Long>(values);
         ownerName = owner == null ? "" : owner;
         valid = true;
     }
@@ -37,9 +36,15 @@ public final class WandPoolClient {
         return valid;
     }
 
-    public static long get(final int index) {
-        final long[] current = pool;
-        return index >= 0 && index < current.length ? current[index] : 0L;
+    public static long get(final String tag) {
+        if (tag == null) return 0L;
+        final Long value = pool.get(tag);
+        return value == null ? 0L : value;
+    }
+
+    /** Read-only view of the currently published map (never mutated after publication). */
+    public static Map<String, Long> snapshot() {
+        return pool;
     }
 
     public static String ownerName() {

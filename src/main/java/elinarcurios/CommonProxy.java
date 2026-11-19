@@ -146,6 +146,9 @@ public class CommonProxy {
             .bus()
             .register(playerEventHandler);
 
+        // 天玄之杖的池子存在世界级 WandPoolData（UUID -> 要素表）里，随世界存档保存，
+        // 主人离线时机器也能直接读写；不需要额外的落盘 tick handler。
+
         // 幽灵模式：服务端每 tick 刷新"幽灵玩家"集合，并每 5 tick 清一次已锁定的怪物仇恨。
         // 纯 FML 事件（TickEvent），只挂 FML 总线。
         FMLCommonHandler.instance()
@@ -255,16 +258,20 @@ public class CommonProxy {
     /** Server -> client worn-bag sync (back rendering + wearing state). */
     public void handleSyncBagMessage(final int entityId, final NBTTagCompound data) {}
 
-    /** Server -> client shared wand vis pool (display cache of the local player). */
-    public void handleWandPoolSync(final long[] values, final String ownerName) {}
+    /** Server -> client shared wand pool (display cache of the local player). */
+    public void handleWandPoolSync(final java.util.Map<String, Long> values, final String ownerName) {}
 
     // ---- Wand pool client cache (overridden in ClientProxy) ----
     public boolean hasClientWandPool() {
         return false;
     }
 
-    public long getClientWandPool(final int index) {
+    public long getClientWandPool(final String tag) {
         return 0L;
+    }
+
+    public java.util.Map<String, Long> getClientWandPoolMap() {
+        return java.util.Collections.emptyMap();
     }
 
     public String getClientWandPoolOwner() {

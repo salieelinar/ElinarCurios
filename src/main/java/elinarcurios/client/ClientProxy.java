@@ -91,7 +91,7 @@ public final class ClientProxy extends CommonProxy {
     }
 
     @Override
-    public void handleWandPoolSync(final long[] values, final String ownerName) {
+    public void handleWandPoolSync(final java.util.Map<String, Long> values, final String ownerName) {
         WandPoolClient.apply(values, ownerName);
     }
 
@@ -101,8 +101,13 @@ public final class ClientProxy extends CommonProxy {
     }
 
     @Override
-    public long getClientWandPool(final int index) {
-        return WandPoolClient.get(index);
+    public long getClientWandPool(final String tag) {
+        return WandPoolClient.get(tag);
+    }
+
+    @Override
+    public java.util.Map<String, Long> getClientWandPoolMap() {
+        return WandPoolClient.snapshot();
     }
 
     @Override

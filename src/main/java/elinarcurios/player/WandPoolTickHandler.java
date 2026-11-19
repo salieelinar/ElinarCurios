@@ -28,6 +28,9 @@ public final class WandPoolTickHandler {
     public void onPlayerLoggedIn(final PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.player instanceof EntityPlayerMP)) return;
         if (event.player.worldObj == null || event.player.worldObj.isRemote) return;
-        WandPool.sendFull((EntityPlayerMP) event.player);
+        final EntityPlayerMP player = (EntityPlayerMP) event.player;
+        // Migrate the previous dev build's pool out of the player's NBT (one-time) BEFORE the sync.
+        WandPool.migrateFromPlayerData(player);
+        WandPool.sendFull(player);
     }
 }

@@ -1,7 +1,8 @@
 package elinarcurios.player;
 
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -9,7 +10,6 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.server.MinecraftServer;
 
 import elinarcurios.ElinarCurios;
 import elinarcurios.network.WandPoolSyncPacket;
@@ -17,18 +17,21 @@ import elinarcurios.util.WandPoolConstants;
 import thaumcraft.api.aspects.Aspect;
 
 /**
- * The shared vis pool of the Celestial Wand (天玄之杖).
+ * Shared vis/aspect pool of the Celestial Wand (天玄之杖).
  *
  * <p>
  * Design (2026-11-19, player-approved):
  * <ul>
- * <li>authoritative storage: a 6 x long pool inside the player's
- * {@code PlayerPersisted} tag — survives death and dimension changes because Forge copies that tag in
- * {@code EntityPlayer#clonePlayer};</li>
+ * <li>authoritative storage: a world-level {@link WandPoolData} database keyed by player UUID
+ * (like an external "infinite storage"), so the pool survives death/dimension changes and is also
+ * readable when the owner is offline — machines keep consuming their vis;</li>
+ * <li>supports <b>all</b> aspects, not only the six primals: the pool is a {@code tag -> long} map,
+ * so later mechanics can store compound/custom aspects; {@link #PRIMALS} is only used for the vanilla
+ * wand HUD/tooltip ordering;</li>
  * <li>the wand itself only stores its owner UUID/name plus a display snapshot, so every wand of one
  * player reads the same pool;</li>
- * <li>binding is permanent on first use: the wand may sit inside a machine (arcane workbench, enchanter)
- * where there is no player context, so the owner must be resolvable from the item alone.</li>
+ * <li>binding is permanent on first use: the wand may sit inside a machine (arcane workbench,
+ * enchanter) where there is no player context.</li>
  * </ul>
  *
  * <p>
@@ -36,17 +39,15 @@ import thaumcraft.api.aspects.Aspect;
  */
 public final class WandPool {
 
-    /** Fixed order for storage and for the sync packet (Aspect#getPrimalAspects() has HashMap order). */
+    /** Fixed order for the vanilla wand HUD and the compact tooltip line. */
     public static final Aspect[] PRIMALS = { Aspect.AIR, Aspect.EARTH, Aspect.FIRE, Aspect.WATER, Aspect.ORDER,
         Aspect.ENTROPY };
 
-    /** Player-persisted compound holding the six longs. */
-    public static final String PLAYER_POOL_TAG = "elinarcurios:wandPool";
     /** Wand root NBT: owner UUID string. */
     public static final String OWNER_TAG = "elinarOwner";
     /** Wand root NBT: owner display name (used by the client to match "is this wand mine"). */
     public static final String OWNER_NAME_TAG = "elinarOwnerName";
-    /** Wand root NBT: display snapshot compound (longs) for foreign wands / direct NBT readers. */
+    /** Wand root NBT: display snapshot compound (aspect tag -> long) for foreign wands / direct NBT readers. */
     public static final String SNAPSHOT_TAG = "elinarPool";
 
     private static final Set<UUID> DIRTY = new HashSet<UUID>();
@@ -55,11 +56,13 @@ public final class WandPool {
 
     // ---------------------------------------------------------------- aspects
 
-    public static int indexOf(final Aspect aspect) {
-        for (int i = 0; i < PRIMALS.length; i++) {
-            if (PRIMALS[i] == aspect) return i;
+    public static boolean isPrimalTag(final String tag) {
+        if (tag == null) return false;
+        for (final Aspect aspect : PRIMALS) {
+            if (aspect.getTag()
+                .equals(tag)) return true;
         }
-        return -1;
+        return false;
     }
 
     public static long clamp(final long value) {
@@ -72,49 +75,41 @@ public final class WandPool {
         return value >= (long) WandPoolConstants.INT_FACE ? WandPoolConstants.INT_FACE : (int) value;
     }
 
-    // ---------------------------------------------------------------- player data
+    // ---------------------------------------------------------------- world database
 
-    private static NBTTagCompound persisted(final EntityPlayer player) {
-        final NBTTagCompound data = player.getEntityData();
-        final NBTTagCompound persisted = data.getCompoundTag(EntityPlayer.PERSISTED_NBT_TAG);
-        data.setTag(EntityPlayer.PERSISTED_NBT_TAG, persisted);
-        return persisted;
+    /** Non-zero aspects stored for one player (empty when unknown). */
+    public static Map<String, Long> poolFor(final UUID id) {
+        final WandPoolData data = WandPoolData.get();
+        return data == null ? new HashMap<String, Long>() : data.snapshot(id);
     }
 
-    private static NBTTagCompound poolTag(final EntityPlayer player, final boolean create) {
-        if (player == null) return null;
-        final NBTTagCompound persisted = persisted(player);
-        if (!persisted.hasKey(PLAYER_POOL_TAG, 10)) {
-            if (!create) return null;
-            persisted.setTag(PLAYER_POOL_TAG, new NBTTagCompound());
-        }
-        return persisted.getCompoundTag(PLAYER_POOL_TAG);
+    /** Server-side pool read for a wand, online or offline. Client must use its synced cache. */
+    public static long getForOwner(final ItemStack stack, final Aspect aspect) {
+        if (aspect == null) return 0L;
+        final WandPoolData data = WandPoolData.get();
+        final UUID id = ownerId(stack);
+        return data == null || id == null ? 0L : data.get(id, aspect.getTag());
     }
 
-    public static long get(final EntityPlayer player, final Aspect aspect) {
-        if (player == null || aspect == null) return 0L;
-        final NBTTagCompound pool = poolTag(player, false);
-        if (pool == null || !pool.hasKey(aspect.getTag(), 4)) return 0L;
-        return clamp(pool.getLong(aspect.getTag()));
+    /** Server-side pool write for a wand, online or offline. */
+    public static void setForOwner(final ItemStack stack, final Aspect aspect, final long value) {
+        if (aspect == null) return;
+        final UUID id = ownerId(stack);
+        if (id == null) return;
+        final WandPoolData data = WandPoolData.get();
+        if (data == null) return;
+        if (data.set(id, aspect.getTag(), value)) DIRTY.add(id);
     }
 
-    public static void set(final EntityPlayer player, final Aspect aspect, final long value) {
-        if (player == null || aspect == null) return;
-        final long next = clamp(value);
-        if (next == get(player, aspect)) return;
-        poolTag(player, true).setLong(aspect.getTag(), next);
-        DIRTY.add(player.getUniqueID());
+    /** True when the wand has an owner whose pool can be reached — the database works offline. */
+    public static boolean isOwnerAccessible(final ItemStack stack) {
+        return ownerId(stack) != null;
     }
 
-    public static void add(final EntityPlayer player, final Aspect aspect, final long value) {
-        if (value <= 0L) return;
-        set(player, aspect, get(player, aspect) + value);
-    }
-
-    public static long[] values(final EntityPlayer player) {
-        final long[] out = new long[PRIMALS.length];
-        for (int i = 0; i < PRIMALS.length; i++) out[i] = get(player, PRIMALS[i]);
-        return out;
+    /** All non-zero aspects of this wand's owner (server-side; client uses its cache/snapshot). */
+    public static Map<String, Long> storedForOwner(final ItemStack stack) {
+        final UUID id = ownerId(stack);
+        return id == null ? new HashMap<String, Long>() : poolFor(id);
     }
 
     // ---------------------------------------------------------------- ownership
@@ -145,45 +140,57 @@ public final class WandPool {
         return name != null && player != null && name.equalsIgnoreCase(player.getCommandSenderName());
     }
 
-    /** Online owner of the wand, or null when the wand is unbound / its owner is offline. */
-    public static EntityPlayer resolveOwner(final ItemStack stack) {
-        final MinecraftServer server = MinecraftServer.getServer();
-        if (server == null) return null;
-        final UUID id = ownerId(stack);
-        final String name = ownerName(stack);
-        if (id == null && name == null) return null;
-        final List players = server.getConfigurationManager().playerEntityList;
-        EntityPlayer byName = null;
-        for (int i = 0; i < players.size(); i++) {
-            final EntityPlayer candidate = (EntityPlayer) players.get(i);
-            if (id != null && id.equals(candidate.getUniqueID())) return candidate;
-            if (name != null && name.equalsIgnoreCase(candidate.getCommandSenderName())) {
-                byName = candidate;
-            }
-        }
-        // UUID first; fall back to the stored name for renamed / offline-mode UUID changes.
-        return byName;
-    }
-
     /**
-     * Permanent first-use binding. Also migrates the legacy per-wand int vis (pre-pool saves) into the
-     * player pool exactly once, then removes the old keys.
+     * Permanent first-use binding. Migrates (a) the legacy per-wand int vis from pre-pool saves and
+     * (b) the previous dev build's per-player pool into the world database, then stamps the owner.
      */
     public static void bind(final ItemStack stack, final EntityPlayer player) {
         if (stack == null || player == null || !(player instanceof EntityPlayerMP) || hasOwner(stack)) return;
+
+        final EntityPlayerMP serverPlayer = (EntityPlayerMP) player;
+        migrateFromPlayerData(serverPlayer);
+
+        final UUID id = player.getUniqueID();
         final NBTTagCompound tag = ensureTag(stack);
-        for (final Aspect aspect : PRIMALS) {
-            if (!tag.hasKey(aspect.getTag(), 3)) continue;
-            final int legacy = tag.getInteger(aspect.getTag());
-            if (legacy > 0) add(player, aspect, legacy);
-            tag.removeTag(aspect.getTag());
+        final WandPoolData data = WandPoolData.get();
+        if (data != null) {
+            for (final Aspect aspect : PRIMALS) {
+                if (!tag.hasKey(aspect.getTag(), 3)) continue;
+                final int legacy = tag.getInteger(aspect.getTag());
+                if (legacy > 0) data.set(id, aspect.getTag(), data.get(id, aspect.getTag()) + legacy);
+                tag.removeTag(aspect.getTag());
+            }
         }
-        tag.setString(
-            OWNER_TAG,
-            player.getUniqueID()
-                .toString());
+
+        tag.setString(OWNER_TAG, id.toString());
         tag.setString(OWNER_NAME_TAG, player.getCommandSenderName());
         writeSnapshot(stack, player);
+        DIRTY.add(id);
+    }
+
+    /**
+     * One-time migration of the previous dev build's pool (stored in the player's
+     * {@code PlayerPersisted}) into the world database. Removes the old tag so it cannot be
+     * re-imported after the pool was legitimately emptied.
+     */
+    public static void migrateFromPlayerData(final EntityPlayerMP player) {
+        if (player == null) return;
+        final NBTTagCompound data = player.getEntityData();
+        final NBTTagCompound persisted = data.getCompoundTag(EntityPlayer.PERSISTED_NBT_TAG);
+        if (!persisted.hasKey(WandPoolConstants.PLAYER_POOL_TAG, 10)) return;
+
+        final UUID id = player.getUniqueID();
+        final WandPoolData store = WandPoolData.get();
+        if (store != null && !store.has(id)) {
+            final NBTTagCompound old = persisted.getCompoundTag(WandPoolConstants.PLAYER_POOL_TAG);
+            for (final Aspect aspect : PRIMALS) {
+                if (old.hasKey(aspect.getTag(), 4)) {
+                    store.set(id, aspect.getTag(), old.getLong(aspect.getTag()));
+                }
+            }
+        }
+        persisted.removeTag(WandPoolConstants.PLAYER_POOL_TAG);
+        data.setTag(EntityPlayer.PERSISTED_NBT_TAG, persisted);
     }
 
     // ---------------------------------------------------------------- display snapshot
@@ -196,25 +203,54 @@ public final class WandPool {
         return snap.hasKey(aspect.getTag(), 4) ? clamp(snap.getLong(aspect.getTag())) : 0L;
     }
 
-    public static boolean snapshotMatches(final ItemStack stack, final EntityPlayer owner) {
-        for (final Aspect aspect : PRIMALS) {
-            if (snapshot(stack, aspect) != get(owner, aspect)) return false;
+    /** Non-zero aspects from the wand's own display snapshot (client fallback for foreign wands). */
+    @SuppressWarnings("unchecked")
+    public static Map<String, Long> snapshotAll(final ItemStack stack) {
+        final Map<String, Long> out = new HashMap<String, Long>();
+        if (stack == null || stack.stackTagCompound == null) return out;
+        final NBTTagCompound tag = stack.stackTagCompound;
+        if (!tag.hasKey(SNAPSHOT_TAG, 10)) return out;
+        final NBTTagCompound snap = tag.getCompoundTag(SNAPSHOT_TAG);
+        for (final String key : (Set<String>) snap.func_150296_c()) {
+            final long value = clamp(snap.getLong(key));
+            if (value > 0L) out.put(key, value);
         }
-        return true;
+        return out;
+    }
+
+    public static boolean snapshotMatches(final ItemStack stack, final EntityPlayer owner) {
+        return owner != null && poolFor(owner.getUniqueID()).equals(snapshotAll(stack));
+    }
+
+    public static void writeSnapshot(final ItemStack stack, final EntityPlayer owner) {
+        if (owner == null) return;
+        writeSnapshotValues(stack, poolFor(owner.getUniqueID()));
+    }
+
+    /** Server-side snapshot refresh that also works while the owner is offline. */
+    public static void writeSnapshotFor(final ItemStack stack) {
+        if (stack == null) return;
+        writeSnapshotValues(stack, storedForOwner(stack));
     }
 
     /**
-     * Writes both the long display snapshot (exact numbers for tooltips) and the legacy int aspect tags
-     * (so addons that read wand NBT directly, e.g. ThaumicHorizons' familiars, still see a sane value).
+     * Writes the exact long snapshot (aspect tag -> long, non-zero only) plus the legacy int aspect
+     * tags for the six primals (addons that read wand NBT directly, e.g. ThaumicHorizons' familiars).
      */
-    public static void writeSnapshot(final ItemStack stack, final EntityPlayer owner) {
-        if (stack == null || owner == null) return;
+    public static void writeSnapshotValues(final ItemStack stack, final Map<String, Long> values) {
+        if (stack == null) return;
         final NBTTagCompound tag = ensureTag(stack);
         final NBTTagCompound snap = new NBTTagCompound();
+        if (values != null) {
+            for (final Map.Entry<String, Long> entry : values.entrySet()) {
+                if (entry.getKey() == null || entry.getValue() == null) continue;
+                final long value = clamp(entry.getValue());
+                if (value > 0L) snap.setLong(entry.getKey(), value);
+            }
+        }
         for (final Aspect aspect : PRIMALS) {
-            final long value = get(owner, aspect);
-            snap.setLong(aspect.getTag(), value);
-            tag.setInteger(aspect.getTag(), face(value));
+            final Long value = values == null ? null : values.get(aspect.getTag());
+            tag.setInteger(aspect.getTag(), face(value == null ? 0L : value));
         }
         tag.setTag(SNAPSHOT_TAG, snap);
     }
@@ -233,12 +269,15 @@ public final class WandPool {
 
     public static void sendFull(final EntityPlayerMP player) {
         if (player == null) return;
+        // The full map is on its way; a later flush would just send the same thing again.
+        DIRTY.remove(player.getUniqueID());
         send(player);
     }
 
     private static void send(final EntityPlayerMP player) {
-        ElinarCurios.networkWrapper
-            .sendTo(new WandPoolSyncPacket.Message(values(player), player.getCommandSenderName()), player);
+        ElinarCurios.networkWrapper.sendTo(
+            new WandPoolSyncPacket.Message(poolFor(player.getUniqueID()), player.getCommandSenderName()),
+            player);
     }
 
     // ---------------------------------------------------------------- formatting

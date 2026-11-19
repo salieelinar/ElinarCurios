@@ -9,9 +9,6 @@ package elinarcurios.util;
  */
 public final class WandPoolConstants {
 
-    /** Six primal aspects, always stored/transmitted in this fixed order. */
-    public static final int ASPECT_COUNT = 6;
-
     /**
      * Raw vis capacity (Thaumcraft's internal unit = displayed vis x100).
      *
@@ -32,6 +29,9 @@ public final class WandPoolConstants {
      * the pack while being invisible on the dial (21,474,826 instead of 21,474,836).
      */
     public static final int INT_FACE = Integer.MAX_VALUE - 1024;
+
+    /** Player-persisted compound of the previous dev build (only read once for migration). */
+    public static final String PLAYER_POOL_TAG = "elinarcurios:wandPool";
 
     private WandPoolConstants() {}
 }
