@@ -35,6 +35,9 @@ public final class WandPoolTickHandler {
     /** Crucible cadence: 101 ticks ≈ 5.05 s. */
     private static final int DECOMPOSE_INTERVAL = 101;
 
+    /** The pool stores raw vis (display x100); one displayed point is 100 raw, not 1 raw. */
+    private static final long RAW_PER_POINT = 100L;
+
     @SubscribeEvent
     public void onPlayerTick(final TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END) return;
@@ -80,16 +83,18 @@ public final class WandPoolTickHandler {
 
         final Aspect chosen = compounds.get(player.worldObj.rand.nextInt(compounds.size()));
         final long current = WandPool.getForOwner(wand, chosen);
-        if (current <= 0L) return;
+        if (current < RAW_PER_POINT) return;
 
-        // 1 raw of the compound -> 1 raw of EVERY component (all components, not a random one).
-        WandPool.setForOwner(wand, chosen, current - 1L);
+        // 1 displayed point (100 raw) of the compound -> 1 displayed point (100 raw) of EVERY
+        // component. The crucible itself works in displayed aspect units; using 1 raw here showed
+        // as 0.01 per conversion.
+        WandPool.setForOwner(wand, chosen, current - RAW_PER_POINT);
         final Aspect[] components = chosen.getComponents();
         if (components != null) {
             for (final Aspect component : components) {
                 final long value = WandPool.getForOwner(wand, component);
-                if (value < WandPoolConstants.CAPACITY) {
-                    WandPool.setForOwner(wand, component, value + 1L);
+                if (value <= WandPoolConstants.CAPACITY - RAW_PER_POINT) {
+                    WandPool.setForOwner(wand, component, value + RAW_PER_POINT);
                 }
             }
         }
