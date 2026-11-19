@@ -16,6 +16,7 @@ import net.minecraft.init.Blocks;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.MathHelper;
+import net.minecraft.util.ResourceLocation;
 
 import org.lwjgl.opengl.GL11;
 
@@ -39,6 +40,15 @@ import thaumcraft.common.items.wands.ItemWandCasting;
 public class ModelElinarWand extends ModelBase {
 
     private static final float CAP_SCALE = 1.15F;
+    private static final int ROD_FRAME_COUNT = 32;
+    private static final int ROD_FRAME_TIME = 3;
+    private static final ResourceLocation[] ROD_FRAMES = new ResourceLocation[ROD_FRAME_COUNT];
+
+    static {
+        for (int i = 0; i < ROD_FRAME_COUNT; i++) {
+            ROD_FRAMES[i] = new ResourceLocation("elinarcurios", "textures/models/wand_rod_elinar_" + i + ".png");
+        }
+    }
 
     ModelRenderer Focus;
     ModelRenderer Cap;
@@ -75,10 +85,11 @@ public class ModelElinarWand extends ModelBase {
         final ItemStack focusStack = wand.getFocusItem(wandStack);
         final EntityPlayer player = Minecraft.getMinecraft().thePlayer;
 
-        // Rod: four quads, one per original rune column.
-        Minecraft.getMinecraft().renderEngine.bindTexture(
-            wand.getRod(wandStack)
-                .getTexture());
+        // Rod: four quads, one per original rune column. The molten-space-time
+        // animation is bound per frame: a standalone bindTexture texture does not
+        // process .mcmeta animation, so we pick one of the 32 64x64 frame textures.
+        final int rodFrame = (player.ticksExisted / ROD_FRAME_TIME) % ROD_FRAME_COUNT;
+        Minecraft.getMinecraft().renderEngine.bindTexture(ROD_FRAMES[rodFrame]);
         GL11.glPushMatrix();
         if (wand.getRod(wandStack)
             .isGlowing()) {
