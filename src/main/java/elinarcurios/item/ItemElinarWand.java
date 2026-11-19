@@ -29,35 +29,35 @@ import thaumcraft.common.Thaumcraft;
 import thaumcraft.common.items.wands.ItemWandCasting;
 
 /**
- * 澶╃巹涔嬫潠 鈥斺€?娉ㄥ唽涓?elinarcurios 鑷繁鐨勭墿鍝?鑰岄潪澶嶇敤 TC 鐨?itemWandCasting),
- * 鍥犳鍒涢€犳爣绛?/ NEI 鐗╁搧鍒楄〃 / 閰嶆柟杈撳嚭鍏ㄩ儴鍙(TC 鐨?getSubItems 鏄‖缂栫爜鏋氫妇,
- * 鑷畾涔?rod/cap 缁勫悎涓嶄細鑷姩鍑虹幇鍦?TC 鐗╁搧鍒楄〃閲?銆?
+ * 天玄之杖 —— 注册为 elinarcurios 自己的物品(而非复用 TC 的 itemWandCasting),
+ * 因此创造标签 / NEI 物品列表 / 配方输出全部可见(TC 的 getSubItems 是硬编码枚举,
+ * 自定义 rod/cap 组合不会自动出现在 TC 物品列表里)。
  *
  * <p>
- * 2026-11-19 璧?vis 鏀逛负銆岀帺瀹跺叡浜瓟鍔涙睜銆?
+ * 2026-11-19 起 vis 改为「玩家共享魔力池」:
  * <ul>
- * <li>姹犲瓙瀛樺湪涓栫晫绾?{@code WandPoolData}(UUID -> 瑕佺礌琛?,涓讳汉涓嬬嚎鍚庢満鍣ㄤ粛鑳芥墸;</li>
- * <li>鏀寔<b>鎵€鏈?/b>瑕佺礌(涓嶉檺浜?6 绉嶅熀纭€瑕佺礌),涓哄悗缁満鍒堕鐣?</li>
- * <li>鏉栨湰韬彧瀛樸€岀粦瀹氱帺瀹?UUID + 鏄剧ず蹇収銆?鍚屼竴涓帺瀹剁殑鎵€鏈夊ぉ鐜勪箣鏉栧叡鐢ㄥ悓涓€涓睜;</li>
- * <li>棣栨浣跨敤姘镐箙缁戝畾(鏉栧彲鑳借鏀捐繘濂ユ湳宸ヤ綔鍙?闄勯瓟鍣ㄧ瓑娌℃湁鐜╁涓婁笅鏂囩殑鏈哄櫒閲?;</li>
- * <li>瀹㈡埛绔樉绀虹粺涓€璇?{@code WandPoolSyncPacket} 鎺ㄦ潵鐨勭紦瀛?鎵€浠ャ€屽伐浣滃彴涓€鎶娿€佹墜涓婁竴鎶娿€?
- * 浠讳綍鏃跺埢鏄剧ず鐨勯兘鏄悓涓€涓暟銆?/li>
+ * <li>池子存在世界级 {@code WandPoolData}(UUID -> 要素表),主人下线后机器仍能扣;</li>
+ * <li>支持<b>所有</b>要素(不限于 6 种基础要素),为后续机制预留;</li>
+ * <li>杖本身只存「绑定玩家 UUID + 显示快照」,同一个玩家的所有天玄之杖共用同一个池;</li>
+ * <li>首次使用永久绑定(杖可能被放进奥术工作台/附魔器等没有玩家上下文的机器里);</li>
+ * <li>客户端显示统一读 {@code WandPoolSyncPacket} 推来的缓存,所以「工作台一把、手上一把」
+ * 任何时刻显示的都是同一个数。</li>
  * </ul>
  *
  * <p>
- * TC 鐨?vis 鎺ュ彛鏄?int,瓒呰繃 {@link Integer#MAX_VALUE} 鐨勯儴鍒嗗澶栧す鍙?tooltip 鏄剧ず瀹屾暣 long,
- * 鎷ㄧ洏(HUD)鎸夌帺瀹惰姹傛樉绀?int 涓婇檺銆傝瑙?
- * {@code D:\Agent\GTNH\ref\ElinarCurios-澶╃巹涔嬫潠-鍏变韩榄斿姏姹?long瀛樺偍-20261119.md}銆?
+ * TC 的 vis 接口是 int,超过 {@link Integer#MAX_VALUE} 的部分对外夹取;tooltip 显示完整 long,
+ * 拨盘(HUD)按玩家要求显示 int 上限。详见
+ * {@code D:\Agent\GTNH\ref\ElinarCurios-天玄之杖-共享魔力池-long存储-20261119.md}。
  *
  * <p>
- * 鍏堜緥:ThaumicHorizons 鐨?ItemWandCastingDisposable 鍚屾缁ф壙鏂规;
- * 绾圭悊鐓ф惉 Avaritia 鐨勬按鏅剁紶缁曟潠(wand_rod_neutronium / wand_cap_crystal,瑙?LICENSES/LICENSE-MIT-Avaritia.txt)銆?
+ * 先例:ThaumicHorizons 的 ItemWandCastingDisposable 同款继承方案;
+ * 纹理照搬 Avaritia 的水晶缠绕杖(wand_rod_neutronium / wand_cap_crystal,见 LICENSES/LICENSE-MIT-Avaritia.txt)。
  */
 public class ItemElinarWand extends ItemWandCasting {
 
     public static ItemElinarWand instance;
 
-    /** 缁勮濂界殑榛樿娉曟潠(绌烘睜)銆? */
+    /** 组装好的默认法杖(空池)。 */
     public ItemStack wand;
 
     public ItemElinarWand() {
@@ -72,7 +72,7 @@ public class ItemElinarWand extends ItemWandCasting {
 
     // ---------------------------------------------------------------- identity / display
 
-    /** 銆屽ぉ鐜勪箣鏉栥€嶅僵铏规笎鍙樺姩鐢诲悕(鏈嶅姟绔繑鍥為潤鎬佹枃鏈?瀹夊叏)銆? */
+    /** 「天玄之杖」彩虹渐变动画名(服务端返回静态文本,安全)。 */
     @Override
     public String getItemStackDisplayName(final ItemStack stack) {
         return FabulousText.makeFabulous(StatCollector.translateToLocal("item.elinarcurios.wand.name"));
@@ -94,8 +94,11 @@ public class ItemElinarWand extends ItemWandCasting {
         final String owner = WandPool.ownerName(stack);
         final String binding = owner == null ? StatCollector.translateToLocal("item.elinarcurios.wand.unbound")
             : StatCollector.translateToLocalFormatted("item.elinarcurios.wand.bound", owner);
-        tooltip.add("搂b" + StatCollector.translateToLocal("item.elinarcurios.wand.pool") + " 搂7" + binding);
+        tooltip.add("§b" + StatCollector.translateToLocal("item.elinarcurios.wand.pool") + " §7" + binding);
 
+        // One snapshot for the whole tooltip: the client pool map is volatile and the sync thread
+        // may swap it between reads; using it for both the six rows and the total keeps them
+        // consistent (the old code could show a total smaller than the sum of the rows).
         final Map<String, Long> stored = storedAspects(stack);
         int types = 0;
         long total = 0L;
@@ -109,22 +112,22 @@ public class ItemElinarWand extends ItemWandCasting {
             // Shift: full per-aspect breakdown (the old layout, now only on demand).
             for (final Aspect aspect : WandPool.PRIMALS) {
                 tooltip.add(
-                    "搂" + aspect.getChatcolor()
+                    "§" + aspect.getChatcolor()
                         + StatCollector.translateToLocalFormatted(
                             "item.elinarcurios.wand.aspectLine",
                             aspectName(aspect),
                             aspect.getName()));
-                tooltip.add("搂f" + WandPool.format(displayPool(stack, aspect)));
+                tooltip.add("§f" + WandPool.format(stored.getOrDefault(aspect.getTag(), 0L)));
             }
             tooltip.add(StatCollector.translateToLocalFormatted("item.elinarcurios.wand.totalLine", types));
-            tooltip.add("搂f" + WandPool.format(total));
+            tooltip.add("§f" + WandPool.format(total));
         } else {
             // Default: compact, one colored number per primal, no names; total on one line.
             for (final Aspect aspect : WandPool.PRIMALS) {
-                tooltip.add("搂" + aspect.getChatcolor() + WandPool.format(displayPool(stack, aspect)));
+                tooltip.add("§" + aspect.getChatcolor() + WandPool.format(stored.getOrDefault(aspect.getTag(), 0L)));
             }
             tooltip.add(
-                StatCollector.translateToLocalFormatted("item.elinarcurios.wand.totalLine", types) + " 搂f"
+                StatCollector.translateToLocalFormatted("item.elinarcurios.wand.totalLine", types) + " §f"
                     + WandPool.format(total));
         }
 
@@ -188,7 +191,7 @@ public class ItemElinarWand extends ItemWandCasting {
             // int overflow from a read-modify-write on a clamped value: never corrupt the pool.
             next = current;
         } else if (amount == 0) {
-            // explicit "empty the wand" 鈥?unique value whose absolute and delta interpretations agree.
+            // explicit "empty the wand" — unique value whose absolute and delta interpretations agree.
             next = 0L;
         } else if (current > (long) WandPoolConstants.INT_FACE) {
             // TC/addons do storeVis(getVis() +/- x); getVis() was clamped, so apply their delta.
@@ -321,7 +324,7 @@ public class ItemElinarWand extends ItemWandCasting {
 
     /**
      * Binds an unbound wand to the acting (server) player on first use, then reports whether the
-     * owner's pool is reachable 鈥?the world database works online and offline alike.
+     * owner's pool is reachable — the world database works online and offline alike.
      */
     private static boolean ensureAccessible(final ItemStack stack, final EntityPlayer player) {
         if (WandPool.isOwnerAccessible(stack)) return true;
