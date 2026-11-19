@@ -157,10 +157,11 @@ public final class WandPool {
         for (int i = 0; i < players.size(); i++) {
             final EntityPlayer candidate = (EntityPlayer) players.get(i);
             if (id != null && id.equals(candidate.getUniqueID())) return candidate;
-            if (id == null && name != null && name.equalsIgnoreCase(candidate.getCommandSenderName())) {
+            if (name != null && name.equalsIgnoreCase(candidate.getCommandSenderName())) {
                 byName = candidate;
             }
         }
+        // UUID first; fall back to the stored name for renamed / offline-mode UUID changes.
         return byName;
     }
 

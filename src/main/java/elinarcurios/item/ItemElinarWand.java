@@ -174,6 +174,9 @@ public class ItemElinarWand extends ItemWandCasting {
         if (amount < 0) {
             // int overflow from a read-modify-write on a clamped value: never corrupt the pool.
             next = current;
+        } else if (amount == 0) {
+            // explicit "empty the wand" — unique value whose absolute and delta interpretations agree.
+            next = 0L;
         } else if (current > (long) WandPoolConstants.INT_FACE) {
             // TC/addons do storeVis(getVis() +/- x); getVis() was clamped, so apply their delta.
             next = current + ((long) amount - (long) WandPoolConstants.INT_FACE);
