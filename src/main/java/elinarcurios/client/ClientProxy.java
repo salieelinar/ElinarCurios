@@ -19,7 +19,6 @@ import elinarcurios.gui.GuiInfiniteBackpack;
 import elinarcurios.gui.GuiLunchBox;
 import elinarcurios.item.ItemElinarWand;
 import elinarcurios.player.BagProperty;
-import thaumcraft.client.renderers.item.ItemWandRenderer;
 
 @SideOnly(Side.CLIENT)
 public final class ClientProxy extends CommonProxy {
@@ -36,7 +35,7 @@ public final class ClientProxy extends CommonProxy {
         // TC's ClientProxy only registers the renderer for its own itemWandCasting instance;
         // without this, ItemElinarWand falls back to flat 2D rendering with no model/texture.
         if (ThaumcraftCompat.isAvailable()) {
-            MinecraftForgeClient.registerItemRenderer(ItemElinarWand.instance, new ItemWandRenderer());
+            MinecraftForgeClient.registerItemRenderer(ItemElinarWand.instance, new ElinarWandRenderer());
         }
         ClientRegistry.registerKeyBinding(KeyBindings.openBag);
         FMLCommonHandler.instance()

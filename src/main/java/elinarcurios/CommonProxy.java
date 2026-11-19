@@ -11,6 +11,7 @@ import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import cpw.mods.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
+import elinarcurios.block.BlockElinarLight;
 import elinarcurios.block.BlockEternalChest;
 import elinarcurios.block.BlockPeaceTotem;
 import elinarcurios.block.BlockVoidChest;
@@ -44,6 +45,7 @@ import elinarcurios.network.SwitchPagePacket;
 import elinarcurios.network.SyncBagPacket;
 import elinarcurios.network.ToggleBuffPacket;
 import elinarcurios.network.WandPoolSyncPacket;
+import elinarcurios.player.ElinarWandLightHandler;
 import elinarcurios.player.PlayerEventHandler;
 import elinarcurios.player.WandPoolSaveHandler;
 import elinarcurios.recipe.FresnelLensRecipes;
@@ -118,6 +120,8 @@ public class CommonProxy {
         BlockPeaceTotem.register();
         BlockEternalChest.register();
         BlockVoidChest.register();
+        BlockElinarLight.register();
+        ElinarWandLightHandler.register();
 
         // 午餐盒:进食协议整套继承自 SpiceOfLife 的 ItemFoodContainer(盒盖状态、原版进食动画、
         // 智能选食、AppleCore 食物值),所以注册点必须用 isModLoaded 包住 —— 该物品类在类加载

@@ -79,6 +79,7 @@ public final class ElinarCurios {
     @Mod.EventHandler
     public void serverStopping(final FMLServerStoppingEvent event) {
         elinarcurios.player.WandPoolStorage.saveIfDirty();
+        elinarcurios.player.ElinarWandLightHandler.removeAll();
     }
 
     /** 退档 / 服务器停止：清空束流虚空的 UUID 注册表，避免跨存档留下死引用；清掉杖池缓存。 */
