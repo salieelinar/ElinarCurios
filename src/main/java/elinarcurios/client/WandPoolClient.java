@@ -10,20 +10,25 @@ import elinarcurios.util.WandPoolConstants;
  * {@code WandPoolSyncPacket} and is the single display source for every Celestial Wand the local
  * player owns — no matter whether the wand is in hand, in a chest, in the arcane workbench or in an
  * enchanter. That is what keeps two wands in two different inventories showing the same number.
+ *
+ * <p>
+ * The packet handler runs on the client network thread while the HUD/tooltip read on the render
+ * thread, so the array is published through a volatile reference (write a fresh copy, then swap).
  */
 public final class WandPoolClient {
 
-    private static final long[] POOL = new long[WandPoolConstants.ASPECT_COUNT];
-
-    private static String ownerName = "";
-    private static boolean valid;
+    private static volatile long[] pool = new long[WandPoolConstants.ASPECT_COUNT];
+    private static volatile String ownerName = "";
+    private static volatile boolean valid;
 
     private WandPoolClient() {}
 
     public static void apply(final long[] values, final String owner) {
-        if (values != null && values.length == POOL.length) {
-            System.arraycopy(values, 0, POOL, 0, POOL.length);
+        final long[] copy = new long[WandPoolConstants.ASPECT_COUNT];
+        if (values != null) {
+            System.arraycopy(values, 0, copy, 0, Math.min(values.length, copy.length));
         }
+        pool = copy;
         ownerName = owner == null ? "" : owner;
         valid = true;
     }
@@ -33,7 +38,8 @@ public final class WandPoolClient {
     }
 
     public static long get(final int index) {
-        return index >= 0 && index < POOL.length ? POOL[index] : 0L;
+        final long[] current = pool;
+        return index >= 0 && index < current.length ? current[index] : 0L;
     }
 
     public static String ownerName() {
