@@ -31,6 +31,9 @@ import thaumcraft.api.aspects.Aspect;
  */
 public final class WandPoolTickHandler {
 
+    /** Crucible cadence: 101 ticks ≈ 5.05 s. */
+    private static final int DECOMPOSE_INTERVAL = 101;
+
     /** The pool stores raw vis (display x100); one displayed point is 100 raw, not 1 raw. */
     private static final long RAW_PER_POINT = 100L;
 
@@ -41,7 +44,7 @@ public final class WandPoolTickHandler {
         if (event.player.worldObj == null || event.player.worldObj.isRemote) return;
         final EntityPlayerMP player = (EntityPlayerMP) event.player;
 
-        decompose(player);
+        if (player.ticksExisted % DECOMPOSE_INTERVAL == 0) decompose(player);
         WandPool.flush(player);
     }
 

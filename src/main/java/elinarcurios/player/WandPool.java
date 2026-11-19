@@ -92,6 +92,21 @@ public final class WandPool {
         if (data.set(id, aspect.getTag(), value)) DIRTY.add(id);
     }
 
+    /** Owner-UUID variant, used by the decomposition while the owner has no wand in the inventory. */
+    public static long getForOwner(final UUID id, final Aspect aspect) {
+        if (id == null || aspect == null) return 0L;
+        final WandPoolData data = WandPoolStorage.data();
+        return data == null ? 0L : data.get(id, aspect.getTag());
+    }
+
+    /** Owner-UUID variant of {@link #setForOwner(ItemStack, Aspect, long)}. */
+    public static void setForOwner(final UUID id, final Aspect aspect, final long value) {
+        if (id == null || aspect == null) return;
+        final WandPoolData data = WandPoolStorage.data();
+        if (data == null) return;
+        if (data.set(id, aspect.getTag(), value)) DIRTY.add(id);
+    }
+
     /** True when the wand has an owner whose pool can be reached — the database works offline. */
     public static boolean isOwnerAccessible(final ItemStack stack) {
         return ownerId(stack) != null;
