@@ -6,12 +6,10 @@ import java.util.Map;
 import java.util.UUID;
 
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.item.ItemStack;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.PlayerEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
-import elinarcurios.item.ItemElinarWand;
 import elinarcurios.util.WandPoolConstants;
 import thaumcraft.api.aspects.Aspect;
 
@@ -20,9 +18,10 @@ import thaumcraft.api.aspects.Aspect;
  * full pool when the owner logs in.
  *
  * <p>
- * Also runs the crucible-style decomposition: every {@link #DECOMPOSE_INTERVAL} ticks, if the online
- * player carries a bound Celestial Wand in the main inventory, one random <b>compound</b> aspect is
- * removed (1 raw) and <b>every</b> component of that aspect is added (1 raw each). Primals are never
+ * Also runs the crucible-style decomposition: every server tick, for every online player, one random
+ * <b>compound</b> aspect in that player's pool is removed (1 displayed point = 100 raw) and
+ * <b>every</b> component of that aspect is added (1 displayed point each). No wand/inventory check:
+ * being online is the only condition, so a compound-heavy pool drains quickly. Primals are never
  * selected (the crucible's random re-pick + spill is skipped). Compound aspects are the late-game
  * pool content, so 1 -> all components is intentionally generous.
  *
@@ -31,9 +30,6 @@ import thaumcraft.api.aspects.Aspect;
  * TC types through {@link WandPool}.
  */
 public final class WandPoolTickHandler {
-
-    /** Crucible cadence: 101 ticks ≈ 5.05 s. */
-    private static final int DECOMPOSE_INTERVAL = 101;
 
     /** The pool stores raw vis (display x100); one displayed point is 100 raw, not 1 raw. */
     private static final long RAW_PER_POINT = 100L;
@@ -45,9 +41,7 @@ public final class WandPoolTickHandler {
         if (event.player.worldObj == null || event.player.worldObj.isRemote) return;
         final EntityPlayerMP player = (EntityPlayerMP) event.player;
 
-        if (player.ticksExisted % DECOMPOSE_INTERVAL == 0) {
-            decompose(player);
-        }
+        decompose(player);
         WandPool.flush(player);
     }
 
@@ -62,16 +56,12 @@ public final class WandPoolTickHandler {
     }
 
     /**
-     * Crucible-style decomposition for the online owner's pool. The wand stack is used only to
-     * resolve the owner UUID and to refresh its NBT snapshot; the authoritative pool is world data.
+     * Crucible-style decomposition for the online player's pool. No wand stack is needed: the owner
+     * UUID is the player's UUID, so the pool keeps converting even if the wand sits in a container
+     * or machine while the player is online.
      */
     private static void decompose(final EntityPlayerMP player) {
-        final ItemStack wand = findWand(player);
-        if (wand == null) return;
-
-        final UUID owner = WandPool.ownerId(wand);
-        if (owner == null) return;
-
+        final UUID owner = player.getUniqueID();
         final Map<String, Long> pool = WandPool.poolFor(owner);
         final List<Aspect> compounds = new ArrayList<Aspect>();
         for (final Aspect aspect : Aspect.aspects.values()) {
@@ -82,31 +72,20 @@ public final class WandPoolTickHandler {
         if (compounds.isEmpty()) return;
 
         final Aspect chosen = compounds.get(player.worldObj.rand.nextInt(compounds.size()));
-        final long current = WandPool.getForOwner(wand, chosen);
+        final long current = WandPool.getForOwner(owner, chosen);
         if (current < RAW_PER_POINT) return;
 
         // 1 displayed point (100 raw) of the compound -> 1 displayed point (100 raw) of EVERY
-        // component. The crucible itself works in displayed aspect units; using 1 raw here showed
-        // as 0.01 per conversion.
-        WandPool.setForOwner(wand, chosen, current - RAW_PER_POINT);
+        // component. The crucible itself works in displayed aspect units.
+        WandPool.setForOwner(owner, chosen, current - RAW_PER_POINT);
         final Aspect[] components = chosen.getComponents();
         if (components != null) {
             for (final Aspect component : components) {
-                final long value = WandPool.getForOwner(wand, component);
+                final long value = WandPool.getForOwner(owner, component);
                 if (value <= WandPoolConstants.CAPACITY - RAW_PER_POINT) {
-                    WandPool.setForOwner(wand, component, value + RAW_PER_POINT);
+                    WandPool.setForOwner(owner, component, value + RAW_PER_POINT);
                 }
             }
         }
-        WandPool.writeSnapshotFor(wand);
-    }
-
-    private static ItemStack findWand(final EntityPlayerMP player) {
-        for (final ItemStack stack : player.inventory.mainInventory) {
-            if (stack != null && stack.getItem() instanceof ItemElinarWand && WandPool.hasOwner(stack)) {
-                return stack;
-            }
-        }
-        return null;
     }
 }
