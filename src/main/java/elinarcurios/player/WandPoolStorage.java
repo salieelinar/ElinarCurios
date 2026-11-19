@@ -114,10 +114,9 @@ public final class WandPoolStorage {
                 // old code treated that as a write failure and never saved the pool at all.
                 if (!syncWarned) {
                     syncWarned = true;
-                    LOGGER.warn(
-                        "[ElinarCurios] fsync failed for wand pool temp file; continuing with the atomic move "
-                            + "(durability is reduced, but the data is still written)",
-                        e);
+                    LOGGER.info(
+                        "[ElinarCurios] fsync is unavailable for the wand pool data directory; using the atomic move "
+                            + "(data is written, durability is reduced only on a hard power loss)");
                 }
             }
         } catch (final Exception e) {

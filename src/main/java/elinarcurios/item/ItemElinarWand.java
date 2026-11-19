@@ -209,13 +209,16 @@ public class ItemElinarWand extends ItemWandCasting {
     public AspectList getAspectsWithRoom(final ItemStack stack) {
         final AspectList out = new AspectList();
         if (WandPool.ownerName(stack) == null) return out; // unbound: never charge
+        // TC nodes transfer only the aspects present in this list. Returning just the six
+        // primals made compound aspects impossible to absorb; expose every registered aspect
+        // that still has room in the long pool.
         if (isServerSide()) {
             if (!WandPool.isOwnerAccessible(stack)) return out;
-            for (final Aspect aspect : WandPool.PRIMALS) {
+            for (final Aspect aspect : Aspect.aspects.values()) {
                 if (WandPool.getForOwner(stack, aspect) < WandPoolConstants.CAPACITY) out.add(aspect, 1);
             }
         } else {
-            for (final Aspect aspect : WandPool.PRIMALS) {
+            for (final Aspect aspect : Aspect.aspects.values()) {
                 if (displayPool(stack, aspect) < WandPoolConstants.CAPACITY) out.add(aspect, 1);
             }
         }
