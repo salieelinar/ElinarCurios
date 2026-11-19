@@ -3,6 +3,7 @@ package elinarcurios.player;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.SyncFailedException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
@@ -43,6 +44,8 @@ public final class WandPoolStorage {
 
     private static WandPoolData data;
     private static int ticks;
+    /** fsync can fail on some Windows/filesystem/network-drive setups; warn once, not every save. */
+    private static boolean syncWarned;
 
     private WandPoolStorage() {}
 
@@ -100,8 +103,23 @@ public final class WandPoolStorage {
         final File tmp = new File(target.getParentFile(), target.getName() + ".atomic.tmp");
         try (FileOutputStream out = new FileOutputStream(tmp)) {
             CompressedStreamTools.writeCompressed(root, out);
-            out.getFD()
-                .sync();
+            out.flush();
+            try {
+                out.getFD()
+                    .sync();
+            } catch (final SyncFailedException e) {
+                // fsync is best-effort: the temp file is fully written and closed below, and the
+                // atomic move still replaces the old file. Some filesystems (notably Windows
+                // network/removable drives) reject FileDescriptor.sync with "sync failed"; the
+                // old code treated that as a write failure and never saved the pool at all.
+                if (!syncWarned) {
+                    syncWarned = true;
+                    LOGGER.warn(
+                        "[ElinarCurios] fsync failed for wand pool temp file; continuing with the atomic move "
+                            + "(durability is reduced, but the data is still written)",
+                        e);
+                }
+            }
         } catch (final Exception e) {
             LOGGER.warn("[ElinarCurios] could not write wand pool temp file", e);
             return false;
