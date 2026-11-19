@@ -36,7 +36,7 @@ public final class ElinarWandLightHandler {
             .register(new Handler());
     }
 
-    private static final class Handler {
+    public static final class Handler {
 
         @SubscribeEvent
         public void onPlayerTick(final TickEvent.PlayerTickEvent event) {
