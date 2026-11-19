@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.inventory.Slot;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
@@ -36,6 +37,25 @@ public final class ElinarWandLightHandler {
             .register(new Handler());
     }
 
+    /**
+     * A wand counts as "carried" when it is held, or when it sits in a non-player slot of the
+     * container the player currently has open (arcane workbench wand slot, infinite backpack
+     * crafting grid, chest, etc.). In those cases the area around the player should stay lit.
+     */
+    public static boolean hasWand(final EntityPlayer player) {
+        if (player == null) return false;
+        final ItemStack held = player.getHeldItem();
+        if (held != null && held.getItem() instanceof ItemElinarWand) return true;
+        if (player.openContainer == null) return false;
+        for (final Object object : player.openContainer.inventorySlots) {
+            final Slot slot = (Slot) object;
+            if (slot.inventory == player.inventory) continue; // skip the player's own inventory
+            final ItemStack stack = slot.getStack();
+            if (stack != null && stack.getItem() instanceof ItemElinarWand) return true;
+        }
+        return false;
+    }
+
     public static final class Handler {
 
         @SubscribeEvent
@@ -44,8 +64,7 @@ public final class ElinarWandLightHandler {
             final EntityPlayer player = event.player;
             if (player.worldObj == null || player.worldObj.isRemote) return;
 
-            final ItemStack held = player.getHeldItem();
-            if (held == null || !(held.getItem() instanceof ItemElinarWand) || player.isDead) {
+            if (!hasWand(player) || player.isDead) {
                 clear(player);
                 return;
             }

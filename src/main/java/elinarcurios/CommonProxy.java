@@ -120,8 +120,10 @@ public class CommonProxy {
         BlockPeaceTotem.register();
         BlockEternalChest.register();
         BlockVoidChest.register();
-        BlockElinarLight.register();
-        ElinarWandLightHandler.register();
+        if (Loader.isModLoaded("Thaumcraft")) {
+            BlockElinarLight.register();
+            ElinarWandLightHandler.register();
+        }
 
         // 午餐盒:进食协议整套继承自 SpiceOfLife 的 ItemFoodContainer(盒盖状态、原版进食动画、
         // 智能选食、AppleCore 食物值),所以注册点必须用 isModLoaded 包住 —— 该物品类在类加载
