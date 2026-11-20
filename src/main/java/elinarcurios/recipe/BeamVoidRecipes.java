@@ -15,7 +15,7 @@ import gtnhlanth.common.register.LanthItemList;
  * <pre>
  * 束流虚空输入仓 = 原版「过滤型束流出束仓」 + 4×ZPM 机壳 + 4×束流管
  * 束流虚空输出仓 = 原版「束流输入仓」       + 4×ZPM 机壳 + 4×束流管
- * 束流虚空存储器 = ZPM 发射器               + 4×ZPM 机壳 + 4×束流管
+ * 束流虚空存储器 = 超稳定黑洞种子(GT: Black_Hole_Stabilizer) + 4×ZPM 机壳 + 4×束流管
  * 束流虚空输入室 = 束流虚空输入仓           + 4×ZPM 机壳 + 4×束流管
  *
  *   A B A
@@ -24,8 +24,9 @@ import gtnhlanth.common.register.LanthItemList;
  * </pre>
  *
  * <p>
- * 束流线相关的物品来自 GT5U 的 {@code LanthItemList} / {@code ItemList}；如果整合包把束流线关了
- * （物品为 null），只跳过对应配方，不影响方块注册。
+ * 束流线相关的物品来自 GT5U 的 {@code LanthItemList} / {@code ItemList}（存储器核心件是 GT 的超稳定黑洞种子
+ * {@code ItemList.Black_Hole_Stabilizer}）；如果整合包把束流线关了（物品为 null），只跳过对应配方，
+ * 不影响方块注册。
  */
 public final class BeamVoidRecipes {
 
@@ -54,7 +55,10 @@ public final class BeamVoidRecipes {
         registerOne(
             ElinarMachines.getBeamVoidStorage(),
             "beam void storage",
-            ItemList.Emitter_ZPM.get(1),
+            // 核心件换成了 GT 的超稳定黑洞种子（2026-11-20 芷若定案）：原来这里是 ZPM 发射器。
+            // 该物品是黑洞压缩机（BHC）里把黑洞锁成"超级稳定"的催化剂，见 GT5U
+            // MTEBlackHoleCompressor#searchAndDecrementCatalysts；GT 只注册物品，配方由 GTNH CoreMod 给。
+            ItemList.Black_Hole_Stabilizer.get(1),
             beamPipe,
             hull);
         registerOne(
