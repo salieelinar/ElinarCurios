@@ -13,20 +13,26 @@ import gtnhlanth.common.register.LanthItemList;
  * 束流虚空四件套的合成表（2026-11-14 从独立验证版并入）。
  *
  * <pre>
- * 束流虚空输入仓 = 原版「过滤型束流出束仓」 + 4×ZPM 机壳 + 4×束流管
- * 束流虚空输出仓 = 原版「束流输入仓」       + 4×ZPM 机壳 + 4×束流管
- * 束流虚空存储器 = 超稳定黑洞种子(GT: Black_Hole_Stabilizer) + 4×ZPM 机壳 + 4×束流管
+ * 束流虚空输入仓 = 原版「过滤型束流出束仓」 + 4×黑洞种子 + 4×束流管
+ * 束流虚空输出仓 = 原版「束流输入仓」       + 4×黑洞种子 + 4×束流管
+ * 束流虚空存储器 = 超稳定黑洞种子           + 4×ZPM 机壳 + 4×束流管
  * 束流虚空输入室 = 束流虚空输入仓           + 4×ZPM 机壳 + 4×束流管
  *
  *   A B A
- *   B C B
- *   A B A      A=束流管  B=ZPM 机壳  C=核心件
+ *   B C B      A=束流管  B=边角件（见上表）  C=核心件
+ *   A B A
  * </pre>
  *
  * <p>
- * 束流线相关的物品来自 GT5U 的 {@code LanthItemList} / {@code ItemList}（存储器核心件是 GT 的超稳定黑洞种子
- * {@code ItemList.Black_Hole_Stabilizer}）；如果整合包把束流线关了（物品为 null），只跳过对应配方，
- * 不影响方块注册。
+ * 物品全部来自 GT5U 的 {@code LanthItemList} / {@code ItemList}：
+ * <ul>
+ * <li>黑洞种子 = {@code ItemList.Black_Hole_Opener}（亚稳态黑洞的催化剂）—— 输入仓 / 输出仓的 4 个边角件
+ * （2026-11-20 芷若定案，原为 4×ZPM 机壳）；</li>
+ * <li>超稳定黑洞种子 = {@code ItemList.Black_Hole_Stabilizer} —— 存储器的核心件。</li>
+ * </ul>
+ * 两者都是黑洞压缩机（BHC）的催化剂，见 GT5U {@code MTEBlackHoleCompressor#searchAndDecrementCatalysts}；
+ * GT 只注册物品、配方由 GTNH CoreMod 给。任一物品为 null（整合包没开束流线 / GT 版本没有该物品）时只跳过
+ * 对应配方并打日志，不影响方块注册。
  */
 public final class BeamVoidRecipes {
 
@@ -34,24 +40,26 @@ public final class BeamVoidRecipes {
 
     public static void register() {
         final ItemStack beamPipe = LanthItemList.BEAMLINE_PIPE;
-        final ItemStack hull = ItemList.Hull_ZPM.get(1);
-        if (beamPipe == null || hull == null) {
-            FMLLog.warning("[ElinarCurios] beamline pipe / ZPM hull unavailable - beam void recipes skipped");
+        if (beamPipe == null) {
+            FMLLog.warning("[ElinarCurios] beamline pipe unavailable - beam void recipes skipped");
             return;
         }
+        final ItemStack hull = ItemList.Hull_ZPM.get(1);
+        // 普通黑洞种子（亚稳态）：输入仓 / 输出仓的边角件。
+        final ItemStack blackHoleSeed = ItemList.Black_Hole_Opener.get(1);
 
         registerOne(
             ElinarMachines.getBeamVoidInputHatch(),
             "beam void input hatch",
             ItemList.AdvancedBeamlineOutputHatch.get(1),
             beamPipe,
-            hull);
+            blackHoleSeed);
         registerOne(
             ElinarMachines.getBeamVoidOutputHatch(),
             "beam void output hatch",
             LanthItemList.LUV_BEAMLINE_INPUT_HATCH,
             beamPipe,
-            hull);
+            blackHoleSeed);
         registerOne(
             ElinarMachines.getBeamVoidStorage(),
             "beam void storage",
@@ -72,11 +80,11 @@ public final class BeamVoidRecipes {
     }
 
     private static void registerOne(IMetaTileEntity machine, String what, ItemStack core, ItemStack beamPipe,
-        ItemStack hull) {
-        if (machine == null || core == null) {
+        ItemStack edge) {
+        if (machine == null || core == null || beamPipe == null || edge == null) {
             FMLLog.warning("[ElinarCurios] " + what + " recipe skipped (missing item)");
             return;
         }
-        GameRegistry.addRecipe(machine.getStackForm(1), "ABA", "BCB", "ABA", 'A', beamPipe, 'B', hull, 'C', core);
+        GameRegistry.addRecipe(machine.getStackForm(1), "ABA", "BCB", "ABA", 'A', beamPipe, 'B', edge, 'C', core);
     }
 }
