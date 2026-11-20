@@ -166,38 +166,28 @@ public final class ElinarMachines {
     }
 
     /**
-     * 本 mod 当前持有的全部 MTE 号（新号）。只给「这个物品是不是我的机器」这类只读判断用
-     * （客户端 tooltip 标识），不参与注册/迁移。
-     */
-    private static final java.util.Set<Integer> OWN_MTE_IDS = java.util.Collections.unmodifiableSet(
-        new java.util.HashSet<>(
-            java.util.Arrays.asList(
-                ID_VOID_NODE,
-                ID_INPUT_HATCH_ADJUSTABLE,
-                ID_COMPREHENSIVE_MINING_PLANT,
-                ID_PATTERN_REDSTONE_DETECTOR,
-                ID_BEAM_FLUX_MULTIPLIER,
-                ID_BEAM_VOID_INPUT_HATCH,
-                ID_BEAM_VOID_STORAGE,
-                ID_BEAM_VOID_OUTPUT_HATCH,
-                ID_BEAM_VOID_INPUT_CHAMBER,
-                ID_MIRROR_ITEM,
-                ID_MIRROR_FLUID,
-                ID_ADVANCED_RADIO_HATCH,
-                ID_HIGH_TIER_ASSEMBLY_LINE)));
-
-    /**
-     * 这个 ItemStack 是不是本 mod 注册的 GT 机器（{@code GregTechAPI.sBlockMachines} + 本 mod 的 MTE 号）。
+     * 这个 ItemStack 是不是本 mod 注册的 GT 机器。
      *
      * <p>
      * 机器物品的注册名归 GT（{@code gregtech}），所以 tooltip 标识不能靠 {@code GameRegistry} 的
-     * modid 判断，只能看「方块是 GT 的机器块」+「meta 是我取的号」。只读，不碰任何实例状态。
+     * modid 判断。这里用「物品是 GT 机器块的物品形态」+「该 meta 上的 MTE 是本 mod 包里的类」双重判断：
+     * <ul>
+     * <li>只认 {@code sBlockMachines} 的物品 —— 否则同号 meta 的其它 GT 元物品会被误伤；</li>
+     * <li>MTE 类名落在 {@code elinarcurios.} 下 —— 不写死 13 个号，以后加机器自动覆盖。</li>
+     * </ul>
+     * 只读，不碰任何实例状态。
      */
     public static boolean isOwnMachineStack(final ItemStack stack) {
         if (stack == null) return false;
-        if (net.minecraft.block.Block.getBlockFromItem(stack.getItem()) != gregtech.api.GregTechAPI.sBlockMachines)
+        if (stack.getItem() != net.minecraft.item.Item.getItemFromBlock(gregtech.api.GregTechAPI.sBlockMachines))
             return false;
-        return OWN_MTE_IDS.contains(stack.getItemDamage());
+        final gregtech.api.interfaces.metatileentity.IMetaTileEntity[] mtes = gregtech.api.GregTechAPI.METATILEENTITIES;
+        final int id = stack.getItemDamage();
+        if (id < 0 || id >= mtes.length) return false;
+        final IMetaTileEntity mte = mtes[id];
+        return mte != null && mte.getClass()
+            .getName()
+            .startsWith("elinarcurios.");
     }
 
     private static IMetaTileEntity voidNode;
