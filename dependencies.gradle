@@ -23,6 +23,13 @@ dependencies {
     compileOnly files(
         'D:/Agent/GTNH/build-libs/2.9.0-RC-1/structurelib-1.4.45.jar')
 
+    // GTNLLib（GTNL 的必装前置，玩家实例里是 1.1.8）：物品 tooltip 末行的「添加模组」标识用它的
+    // TextEffects 文字着色器（`com.gtnllib.text.TextEffects`）。这是**纯软依赖**：只在
+    // `Loader.isModLoaded("gtnllib")` 分支里调用（守卫写在调用点，见 DEV_GUIDE §3.5），没装时退化成
+    // 原版 § 样式的一行字。编译只需要它的 text 包（不含任何 MC 类型），不需要 fastutil。
+    compileOnly files(
+        'D:/Agent/GTNH/build-libs/2.9.0-RC-1/gtnllib-1.1.8.jar')
+
     // ModularUI2：`buildUI` / `ModularPanel` / `Flow` / `IKey` / `LongSyncValue` 都来自它。版本对齐运行时 2.3.91-1.7.10。
     compileOnly files(
         'D:/Agent/GTNH/build-libs/2.9.0-RC-1/modularui2-2.3.91-1.7.10.jar')

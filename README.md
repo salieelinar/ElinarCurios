@@ -58,6 +58,13 @@ ElinarCurios 在「机器正在干活 + 这张 AE 网有玩家下的合成单」
 - 配置：`meOutFastFlushEnabled`（默认开）、`meOutFastFlushHoldTicks`（默认 100 = 停手后 5 秒尾巴）
 - 命令：`/Elinar meflush` 查看开关、尾巴长度和最近一次命中的网络/机器数
 
+## 物品标识
+
+本模组所有物品（含 13 台 GT 机器）的 tooltip 最后一行都带一句「添加模组：天玄造物 ElinarCurios」。
+
+- 装了 GTNLLib（GTNL 的必装前置）时，这一行用它的文字着色器：「天玄造物」走 GENESIS 配色，「ElinarCurios」走棱镜扫光
+- 没装 GTNLLib 时退化成烫金斜体的一行字，文案相同，不会露出格式标记
+
 ## 号段迁移（v1.0.0c2 起）
 
 2026-11-14 起 TST 0.8.1 占用了 `19082/19083`，与本模组的旧号段冲突（同装会启动崩）。全部机器已整段搬到 `23100-23112`：

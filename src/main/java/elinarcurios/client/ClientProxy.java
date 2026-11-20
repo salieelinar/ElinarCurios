@@ -26,6 +26,8 @@ public final class ClientProxy extends CommonProxy {
     @Override
     public void preInit() {
         super.preInit();
+        // 本 mod 所有物品 tooltip 的末行标识（纯客户端事件）。preInit 里挂上，早于任何 GUI 打开。
+        TooltipBadgeHandler.register();
     }
 
     @Override
