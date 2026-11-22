@@ -142,9 +142,9 @@ public final class GuiInfiniteBackpack extends GuiContainer {
         buttonList.add(
             new GuiMiniButton(
                 BTN_EXTRA_CONFIG,
-                guiLeft + xSize - 56 - (ItemInfiniteBackpack.BUFF_KEYS.length + 1) * 38,
+                guiLeft + xSize - 184,
                 guiTop + 3,
-                34,
+                48,
                 13,
                 I18n.format("button.elinarcurios.extra")));
         buildExtraConfigButtons();
