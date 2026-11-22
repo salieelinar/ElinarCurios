@@ -21,7 +21,6 @@
     "MixinGSEventHandler",
     "MixinGSClientEventHandler",
     "MixinDraconicArmorHandler",
-    "MixinDraconicEventHandler",
-    "MixinWailaAspectHandler"
+    "MixinDraconicEventHandler"
   ]
 }
