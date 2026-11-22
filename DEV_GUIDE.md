@@ -867,6 +867,14 @@ GTNL 的 `ECraftingCPUCluster` 都 `extends CraftingCPUCluster`**、走同一个
 
 **边界**：服务器中途关闭会留下部分文件（没有做停机收尾）；单个 MTE 的名字取值异常不会中断扫描，记进 `note`。**2026-11-16 她实测通过**（命令、CSV、位置均正常）。
 
+### 5.39 无尽背包·巫术免祭坛能量（软联动，dev，2026-11-22，v1.0.2-dev）
+
+- **需求原话**：「如果我让我的无尽背包增加一个特性，就是穿上后，能无视巫术所需的能量，原理上是否可行」；拍板「那就先做方案A，挂一个IPowerSource，按你说的」。
+- **机制**：巫术的全部祭坛功耗都走 `PowerSources.get(...)` → 最近 `IPowerSource`（大锅/水壶/蒸馏塔/纺车/水晶球/火盆/镜子/传送石/仪式）。给穿戴者注册一个玩家随身 `IPowerSource`：`getCurrentPower()=1e9`、`consumePower()` 恒 true、`getRange()=16`、位置=玩家，于是 16 格内的设备把玩家当最近能量源、不扣祭坛。
+- **实现**：`compat/WitcheryPowerCompat`（外层类不引用任何巫术类型，巫术类型全在私有 `Impl` 里，未装巫术时即使被加载也不会解析巫术类）；`PlayerEventHandler#onPlayerTick` 在 `Loader.isModLoaded("witchery")` 守卫内每 tick `update(player, worn && Config.witcheryFreeAltarPower)`；logout / 死亡 clone / 停服移除；配置 `witcheryFreeAltarPower`（默认 true）；物品 tooltip 仅在巫术存在且配置开启时显示。
+- **边界**：①未安装巫术 → 分支不进入，功能自动停用；②方案 A 不保证绝对优先：真祭坛比玩家离设备更近时，巫术仍选祭坛并扣它的电，要“永不扣祭坛”需后续 mixin `PowerSources.get` 把随身源排到第一位；③玩家离开 16 格 / 无人值守时失效；④多人服上，站在别人设备旁也会替对方供能；⑤大锅仪式的反噬风险（圈/risk）与能量无关，照旧。
+- **验收**：穿着背包站在大锅旁（先不放祭坛）完整走一次幸运液滴仪式（约 10.5 s 出锅）；再看“有祭坛且祭坛比玩家更近”时是否扣电；不装巫术时游戏行为与以前完全一致。
+
 ## 6. 集成到整合包
 
 - 把 `dist\ElinarCurios-*.jar` 放进整合包的 `mods\` 文件夹即可;

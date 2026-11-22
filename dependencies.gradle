@@ -55,6 +55,11 @@ dependencies {
     compileOnly rfg.deobf(
         files(
             'D:/Agent/GTNH/build-libs/2.9.0-RC-1/AppleCore-3.3.13.jar'))
+    // Witchery（软联动，仅编译期）：无尽背包的“随身祭坛能量源”实现 IPowerSource 并注册到 PowerSources。
+    // 版本对齐运行时 0.24.1；运行期由整合包提供，未安装时调用点用 Loader.isModLoaded("witchery") 守卫，
+    // 整个 compat 类不会加载（见 DEV_GUIDE §3.5）。
+    compileOnly files(
+        'D:/Agent/GTNH/build-libs/2.9.0-RC-1/witchery-1.7.10-0.24.1.jar')
     // Mixin API：gradle.properties 打开 usesMixins 后，gtnhgradle 会去 Maven 拉
     // io.github.legacymoddingmc:unimixins:0.3.1，本机网络取不到。改成用玩家整合包里已经装着的
     // +unimixins-all jar 作为编译期 API（离线可编，运行时由整合包提供同一套 Mixin 类）。

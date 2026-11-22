@@ -11,6 +11,7 @@ item.elinarcurios.tooltip.slots=已用格子: %s / %s
 item.elinarcurios.tooltip.max=每格可存储 2147483647 个物品
 item.elinarcurios.tooltip.pages=%s 页独立存储 × 每页 %s 格
 item.elinarcurios.tooltip.invulnerable=穿戴时:免疫所有伤害、不会死亡
+item.elinarcurios.tooltip.witchery=穿戴时:附近的巫术设备无需祭坛能量
 item.elinarcurios.tooltip.equip=右键打开背包；在背包界面点击「穿上」背到背上，之后按快捷键随时打开。
 item.elinarcurios.tooltip.hint=按住 Shift 查看更多信息
 button.elinarcurios.buff.nv=夜视

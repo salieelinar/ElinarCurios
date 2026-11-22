@@ -11,6 +11,7 @@ item.elinarcurios.tooltip.slots=Slots used: %s / %s
 item.elinarcurios.tooltip.max=Each slot can hold up to 2147483647 items
 item.elinarcurios.tooltip.pages=%s independent pages × %s slots
 item.elinarcurios.tooltip.invulnerable=While worn: immune to all damage, cannot die
+item.elinarcurios.tooltip.witchery=While worn: nearby Witchery devices need no altar power
 item.elinarcurios.tooltip.equip=Right-click to open. Equip it from the backpack GUI, then press the hotkey to open it anytime.
 item.elinarcurios.tooltip.hint=Hold Shift for more information
 button.elinarcurios.buff.nv=NV

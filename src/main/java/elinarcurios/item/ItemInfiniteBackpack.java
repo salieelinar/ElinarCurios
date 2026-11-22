@@ -11,8 +11,10 @@ import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.world.World;
 import net.minecraftforge.common.util.Constants.NBT;
 
+import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
+import elinarcurios.Config;
 import elinarcurios.ElinarCurios;
 import elinarcurios.common.Reference;
 import elinarcurios.network.OpenBagPacket;
@@ -219,6 +221,9 @@ public class ItemInfiniteBackpack extends Item {
                     Integer.toString(STORAGE_SLOTS)));
             tooltips.add(I18n.format("item.elinarcurios.tooltip.max"));
             tooltips.add(I18n.format("item.elinarcurios.tooltip.invulnerable"));
+            if (Loader.isModLoaded("witchery") && Config.witcheryFreeAltarPower) {
+                tooltips.add(I18n.format("item.elinarcurios.tooltip.witchery"));
+            }
             tooltips.add(I18n.format("item.elinarcurios.tooltip.equip"));
         } else {
             tooltips.add(I18n.format("item.elinarcurios.tooltip.hint"));

@@ -99,6 +99,9 @@ public final class Config {
     /** While worn: pull the player back to 1 HP when something sets health to 0 without killing him. */
     public static boolean clampZeroHealth;
 
+    /** While worn: act as an unlimited Witchery altar power source for nearby devices. */
+    public static boolean witcheryFreeAltarPower;
+
     /** 配置文件句柄（供运行期改默认值时写回 cfg 用）。 */
     private static Configuration configFile;
 
@@ -252,6 +255,16 @@ public final class Config {
             true,
             "Infinite Backpack: while it is worn, if something sets the player's health to 0 without calling "
                 + "onDeath (so the death guard never runs), pull it back to 1 HP on the next tick.");
+
+        witcheryFreeAltarPower = config.getBoolean(
+            "witcheryFreeAltarPower",
+            Configuration.CATEGORY_GENERAL,
+            true,
+            "Infinite Backpack: while it is worn, publish the wearer to Witchery's power-source registry as "
+                + "an effectively unlimited altar, so nearby cauldrons, kettles, distilleries, spinning "
+                + "wheels, crystal balls, braziers, mirrors, waystones and rites do not consume altar power. "
+                + "Does nothing when Witchery is not installed. A real altar that is nearer to the device "
+                + "than the wearer is still picked by Witchery's closest-source rule.");
 
         if (config.hasChanged()) config.save();
     }

@@ -22,11 +22,13 @@ import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.PlayerDropsEvent;
 
 import cpw.mods.fml.common.Loader;
+import cpw.mods.fml.common.event.FMLServerStoppingEvent;
 import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.PlayerEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import elinarcurios.Config;
+import elinarcurios.compat.WitcheryPowerCompat;
 import elinarcurios.item.ItemInfiniteBackpack;
 import elinarcurios.util.BagUtils;
 import elinarcurios.util.DisarmGuard;
@@ -59,6 +61,22 @@ public class PlayerEventHandler {
         }
     }
 
+    /** Witchery: drop the wearable power source on logout (the per-tick sync stops firing). */
+    @SubscribeEvent
+    public void onPlayerLoggedOut(final PlayerEvent.PlayerLoggedOutEvent event) {
+        if (Loader.isModLoaded("witchery")) {
+            WitcheryPowerCompat.remove(event.player);
+        }
+    }
+
+    /** Witchery: the integrated server keeps statics across worlds, so clear every source on stop. */
+    @SubscribeEvent
+    public void onServerStopping(final FMLServerStoppingEvent event) {
+        if (Loader.isModLoaded("witchery")) {
+            WitcheryPowerCompat.clearAll();
+        }
+    }
+
     /**
      * Forge only copies {@code IExtendedEntityProperties} on dimension changes, not on death respawn
      * (see EntityPlayer#clonePlayer). Put the worn backpack back on the fresh player and rescue any
@@ -66,6 +84,11 @@ public class PlayerEventHandler {
      */
     @SubscribeEvent
     public void onClone(final net.minecraftforge.event.entity.player.PlayerEvent.Clone event) {
+        // Witchery: the old entity is about to be discarded; drop its power source. The fresh player
+        // re-registers on his next tick (the UUID-keyed entry is reused).
+        if (Loader.isModLoaded("witchery")) {
+            WitcheryPowerCompat.remove(event.original);
+        }
         if (!event.wasDeath || !(event.entityPlayer instanceof EntityPlayerMP)) return;
 
         final BagProperty original = BagProperty.get(event.original);
@@ -92,6 +115,11 @@ public class PlayerEventHandler {
         final EntityPlayer player = event.player;
         if (player == null || player.worldObj == null || player.isDead) return;
         final ItemStack worn = BagUtils.getWornInfiniteBackpack(player);
+        // Witchery soft link: publish the wearer as an altar power source while the bag is worn. The
+        // guard lives at this call site, so the compat class is not loaded when Witchery is absent.
+        if (!player.worldObj.isRemote && Loader.isModLoaded("witchery")) {
+            WitcheryPowerCompat.update(player, worn != null && Config.witcheryFreeAltarPower);
+        }
         if (worn == null) return;
 
         // Keep the client-side self-refresh: a 239-tick Night Vision effect is only stable when the
