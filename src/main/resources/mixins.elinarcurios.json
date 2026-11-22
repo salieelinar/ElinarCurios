@@ -5,7 +5,6 @@
   "refmap": "mixins.elinarcurios.refmap.json",
   "compatibilityLevel": "JAVA_8",
   "target": "@env(DEFAULT)",
-  "plugin": "elinarcurios.mixin.ElinarMixinPlugin",
   "mixins": [
     "MixinEntityAITarget",
     "MixinWorldClosestVulnerablePlayer",
