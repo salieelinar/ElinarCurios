@@ -6,11 +6,11 @@
 
 ## 当前版本
 
-**v1.0.0 c7**（2026-11-16）。版本号由 git tag 决定：先提交、打 tag、再构建，产物是 `build/libs/ElinarCurios-<版本>.jar`；没打 tag 就构建会带 `-dirty` 后缀。c7 是 c6 的夜视回归修复（c6 的客户端早退把 `DragonBuffs.apply` 的自续砍掉，见 §5.37）。
+**v1.0.1**（2026-11-20）。版本号由 git tag 决定：先提交、打 tag、再构建，产物是 `build/libs/ElinarCurios-<版本>.jar`；没打 tag 就构建会带 `-dirty` 后缀。本版 = dev 线整批合并：天玄之杖（原版低模 + 火把光 + 共享魔力池 + 坩埚分解）、物品 tooltip 末行模组标识、束流系列配方换黑洞种子。
 
-**tag 不能带空格**：正式 tag 用 `v1.0.0c7`，但显示名/jar 名要带空格时，构建前设 `$env:VERSION = "v1.0.0 c7"`（gtnhgradle 读 `System.getenv("VERSION")` 覆盖 git 版本，`mcmod.info` 与 jar 名都会变成 `v1.0.0 c7`）。
+**tag 不能带空格**：正式 tag 用 `v1.0.1`；显示名/jar 名需要别的写法时，构建前设 `$env:VERSION = "v1.0.1"`（gtnhgradle 读 `System.getenv("VERSION")` 覆盖 git 版本，`mcmod.info` 与 jar 名都会跟着变）。
 
-**dev 分支（2026-11-16 起）**：日常改动提交到 `dev` 分支，dev 包版本 = `v1.0.1-dev-<git short sha，12 位>`（例 `ElinarCurios-v1.0.1-dev-fd3ecfb944ed`）。dev 包**不发正式 Release**，统一发到**固定 dev 页**（tag `dev-build`、页面标 Pre-release，附件固定名 `ElinarCurios-dev-build.jar` 每次覆盖；https://github.com/salieelinar/ElinarCurios/releases/tag/dev-build ），这样别人在 Releases 页无需登录就能下载，也不会顶掉 main 的 Latest 正式版。dev 上可以**连续攒多个功能**，每个功能单独出 dev 包测；等她确认「这一批可以合」时再一次性把 dev 合并到 `main`、打 `v1.0.1` 正式 tag 并发正式 Release（不逐个功能合并）。c 序号系列停在 `c7`，下一正式版从 `1.0.1` 开始。dev 构建前必须 commit（工作区干净），版本里的 sha 才是当前代码。
+**dev 分支（2026-11-16 起）**：日常改动提交到 `dev` 分支，dev 包版本 = `v1.0.2-dev-<git short sha，12 位>`（例 `ElinarCurios-v1.0.2-dev-<sha>.jar`）。dev 包**不发正式 Release**，统一发到**固定 dev 页**（tag `dev-build`、页面标 Pre-release，附件固定名 `ElinarCurios-dev-build.jar` 每次覆盖；https://github.com/salieelinar/ElinarCurios/releases/tag/dev-build ），这样别人在 Releases 页无需登录就能下载，也不会顶掉 main 的 Latest 正式版。dev 上可以**连续攒多个功能**，每个功能单独出 dev 包测；等她确认「这一批可以合」时再一次性把 dev 合并到 `main`、打正式 tag 并发正式 Release（不逐个功能合并）。下一正式版从 `1.0.2` 开始。dev 构建前必须 commit（工作区干净），版本里的 sha 才是当前代码。
 
 变更记录不再手写在本文档里：一个 tag 对应一组提交，`git log v<旧版本>..v<新版本> --oneline` 就是这一版的更新日志。
 
