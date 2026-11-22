@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import elinarcurios.compat.ThaumGogglesCompat;
 import elinarcurios.util.BagSettings;
 import elinarcurios.util.BagUtils;
+import elinarcurios.util.ElinarProbe;
 
 /**
  * Thaumcraft only looks at the helmet slot when it decides whether to show goggles popups.
@@ -27,11 +28,16 @@ public abstract class MixinRenderEventHandler {
             target = "Lnet/minecraft/entity/player/InventoryPlayer;func_70440_f(I)Lnet/minecraft/item/ItemStack;"))
     private ItemStack elinarcurios$backpackGoggles(final InventoryPlayer inventory, final int slot) {
         final EntityPlayer player = inventory == null ? null : inventory.player;
+        ElinarProbe.GOGGLE.incrementAndGet();
         if (player != null) {
             final ItemStack bag = BagUtils.getWornInfiniteBackpack(player);
             if (bag != null && BagSettings.getBoolean(bag, BagSettings.REVEAL)) {
                 final ItemStack goggles = ThaumGogglesCompat.goggles();
-                if (goggles != null) return goggles;
+                if (goggles != null) {
+                    ElinarProbe.GOGGLE_FORCED.incrementAndGet();
+                    ElinarProbe.dump();
+                    return goggles;
+                }
             }
         }
         return inventory.armorItemInSlot(slot);
