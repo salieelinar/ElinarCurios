@@ -82,6 +82,10 @@ public final class ElinarCurios {
         if (cpw.mods.fml.common.Loader.isModLoaded("Thaumcraft")) {
             elinarcurios.player.ElinarWandLightHandler.removeAll();
         }
+        // 巫术软联动：清掉无尽背包注册的随身能量源（整合服 statics 会跨存档存活）。
+        if (cpw.mods.fml.common.Loader.isModLoaded("witchery")) {
+            elinarcurios.compat.WitcheryPowerCompat.clearAll();
+        }
     }
 
     /** 退档 / 服务器停止：清空束流虚空的 UUID 注册表，避免跨存档留下死引用；清掉杖池缓存。 */

@@ -22,7 +22,6 @@ import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.PlayerDropsEvent;
 
 import cpw.mods.fml.common.Loader;
-import cpw.mods.fml.common.event.FMLServerStoppingEvent;
 import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.PlayerEvent;
@@ -66,14 +65,6 @@ public class PlayerEventHandler {
     public void onPlayerLoggedOut(final PlayerEvent.PlayerLoggedOutEvent event) {
         if (Loader.isModLoaded("witchery")) {
             WitcheryPowerCompat.remove(event.player);
-        }
-    }
-
-    /** Witchery: the integrated server keeps statics across worlds, so clear every source on stop. */
-    @SubscribeEvent
-    public void onServerStopping(final FMLServerStoppingEvent event) {
-        if (Loader.isModLoaded("witchery")) {
-            WitcheryPowerCompat.clearAll();
         }
     }
 
