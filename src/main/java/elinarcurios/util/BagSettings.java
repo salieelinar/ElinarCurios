@@ -84,6 +84,9 @@ public final class BagSettings {
         if (id < 0 || id >= COUNT) return 0F;
         final NBTTagCompound tag = peekTag(stack);
         if (tag == null || !tag.hasKey(KEYS[id])) return DEFAULTS[id];
+        // Booleans are stored as NBT booleans (byte tags); reading them with getFloat would
+        // throw a ClassCastException, so they take a separate path.
+        if (isBoolean(id)) return tag.getBoolean(KEYS[id]) ? 1F : 0F;
         return tag.getFloat(KEYS[id]);
     }
 
