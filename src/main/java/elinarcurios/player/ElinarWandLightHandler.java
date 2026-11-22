@@ -28,11 +28,7 @@ import elinarcurios.item.ItemElinarWand;
  */
 public final class ElinarWandLightHandler {
 
-    /** Temporary diagnostics: one line per container/carry-state change, to be removed later. */
-    private static final boolean DEBUG = true;
-
     private static final Map<UUID, LightRef> ACTIVE = new HashMap<UUID, LightRef>();
-    private static final Map<UUID, String> LAST_DEBUG = new HashMap<UUID, String>();
 
     private ElinarWandLightHandler() {}
 
@@ -73,7 +69,6 @@ public final class ElinarWandLightHandler {
             final boolean hasWand = hasWand(player);
             if (!hasWand || player.isDead) {
                 clear(player);
-                maybeLog(player, false, Integer.MIN_VALUE, Integer.MIN_VALUE, Integer.MIN_VALUE);
                 return;
             }
 
@@ -104,7 +99,6 @@ public final class ElinarWandLightHandler {
             }
             if (lightY == Integer.MIN_VALUE) {
                 clear(player);
-                maybeLog(player, true, lightX, lightY, lightZ);
                 return;
             }
 
@@ -114,61 +108,18 @@ public final class ElinarWandLightHandler {
                 if (world.getBlock(lightX, lightY, lightZ) != BlockElinarLight.instance) {
                     world.setBlock(lightX, lightY, lightZ, BlockElinarLight.instance, 0, 3);
                 }
-                maybeLog(player, true, lightX, lightY, lightZ);
                 return;
             }
 
             clear(player);
             world.setBlock(lightX, lightY, lightZ, BlockElinarLight.instance, 0, 3);
             ACTIVE.put(player.getUniqueID(), new LightRef(world, lightX, lightY, lightZ));
-            maybeLog(player, true, lightX, lightY, lightZ);
         }
 
         @SubscribeEvent
         public void onLoggedOut(final PlayerLoggedOutEvent event) {
             clear(event.player);
-            if (event.player != null) LAST_DEBUG.remove(event.player.getUniqueID());
         }
-    }
-
-    private static void maybeLog(final EntityPlayer player, final boolean hasWand, final int x, final int y,
-        final int z) {
-        if (!DEBUG) return;
-        final String container = player.openContainer == null ? "null"
-            : player.openContainer.getClass()
-                .getName();
-        final StringBuilder key = new StringBuilder().append(hasWand)
-            .append('|')
-            .append(container);
-        if (player.openContainer != null) {
-            for (final Object object : player.openContainer.inventorySlots) {
-                final Slot slot = (Slot) object;
-                final ItemStack stack = slot.getStack();
-                if (stack != null && stack.getItem() instanceof ItemElinarWand) {
-                    key.append('|')
-                        .append(slot.slotNumber)
-                        .append(':')
-                        .append(
-                            slot.inventory.getClass()
-                                .getName());
-                }
-            }
-        }
-        final String keyString = key.toString();
-        if (keyString.equals(LAST_DEBUG.get(player.getUniqueID()))) return;
-        LAST_DEBUG.put(player.getUniqueID(), keyString);
-        final StringBuilder line = new StringBuilder("[ElinarLight] hasWand=").append(hasWand)
-            .append(" container=")
-            .append(container)
-            .append(" light=")
-            .append(x)
-            .append(',')
-            .append(y)
-            .append(',')
-            .append(z)
-            .append(" key=")
-            .append(keyString);
-        System.out.println(line);
     }
 
     private static boolean isFree(final World world, final int x, final int y, final int z) {
@@ -194,7 +145,6 @@ public final class ElinarWandLightHandler {
             clear(ref);
         }
         ACTIVE.clear();
-        LAST_DEBUG.clear();
     }
 
     private static final class LightRef {
