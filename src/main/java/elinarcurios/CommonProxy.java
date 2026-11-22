@@ -18,7 +18,6 @@ import elinarcurios.block.BlockPeaceTotem;
 import elinarcurios.block.BlockVoidChest;
 import elinarcurios.compat.StructureLibCompat;
 import elinarcurios.compat.ThaumcraftCompat;
-import elinarcurios.compat.WailaNodeAspectCompat;
 import elinarcurios.core.GuiHandler;
 import elinarcurios.item.ItemElinarFresnelLens;
 import elinarcurios.item.ItemElinarReactorCore;
@@ -271,11 +270,6 @@ public class CommonProxy {
         // 类一旦被加载就会解析符号，方法体里的守卫来不及生效。
         if (Loader.isModLoaded("structurelib")) {
             StructureLibCompat.register();
-        }
-        // Waila 的 TC 节点要素：Waila 自带插件只在「真实头盔槽是护目镜」时下发 Aspects，
-        // 这里用普通 body provider 在戴背包时补上同样的要素行（不改 Waila/TC 代码）。
-        if (Loader.isModLoaded("Waila") && Loader.isModLoaded("Thaumcraft")) {
-            WailaNodeAspectCompat.register();
         }
     }
 
