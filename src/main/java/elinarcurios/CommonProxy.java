@@ -1,6 +1,7 @@
 package elinarcurios;
 
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraftforge.common.MinecraftForge;
 
@@ -27,6 +28,7 @@ import elinarcurios.item.ItemWirelessBattery;
 import elinarcurios.machine.ElinarChunkManager;
 import elinarcurios.machine.ElinarMachines;
 import elinarcurios.meout.MEOutputFlushHandler;
+import elinarcurios.network.BagSettingsStatePacket;
 import elinarcurios.network.BuffStatePacket;
 import elinarcurios.network.CurrentPagePacket;
 import elinarcurios.network.DissociateVoidChestPacket;
@@ -40,11 +42,13 @@ import elinarcurios.network.OpenBagPacket;
 import elinarcurios.network.OpenLunchBoxPacket;
 import elinarcurios.network.RequestCurrentPagePacket;
 import elinarcurios.network.RequestWornBagPacket;
+import elinarcurios.network.SetBagSettingPacket;
 import elinarcurios.network.SolidifyVoidChestPacket;
 import elinarcurios.network.SwitchPagePacket;
 import elinarcurios.network.SyncBagPacket;
 import elinarcurios.network.ToggleBuffPacket;
 import elinarcurios.network.WandPoolSyncPacket;
+import elinarcurios.player.BackpackAbilityHandler;
 import elinarcurios.player.ElinarWandLightHandler;
 import elinarcurios.player.PlayerEventHandler;
 import elinarcurios.player.WandPoolSaveHandler;
@@ -153,6 +157,14 @@ public class CommonProxy {
             .bus()
             .register(playerEventHandler);
 
+        // 无尽背包的移动/辅助能力（飞行、速度、跳跃、上台阶、挖掘加速）：Forge 事件（jump/break）
+        // 与 FML 事件（player tick）两条总线都要挂，同 PlayerEventHandler。
+        final BackpackAbilityHandler backpackAbilityHandler = new BackpackAbilityHandler();
+        MinecraftForge.EVENT_BUS.register(backpackAbilityHandler);
+        FMLCommonHandler.instance()
+            .bus()
+            .register(backpackAbilityHandler);
+
         // 天玄之杖池：世界级数据，自管原子写（temp+fsync+ATOMIC_MOVE）。周期性落盘 + 世界保存时落盘；
         // 停服/退档由 ElinarCurios 的生命周期处理。与 TC 无关（无数据时纯 no-op）。
         final WandPoolSaveHandler wandPoolSaveHandler = new WandPoolSaveHandler();
@@ -203,6 +215,8 @@ public class CommonProxy {
         net.registerMessage(SyncBagPacket.class, SyncBagPacket.Message.class, ids[0]++, Side.CLIENT);
         net.registerMessage(ToggleBuffPacket.class, ToggleBuffPacket.Message.class, ids[0]++, Side.SERVER);
         net.registerMessage(BuffStatePacket.Handler.class, BuffStatePacket.class, ids[0]++, Side.CLIENT);
+        net.registerMessage(SetBagSettingPacket.class, SetBagSettingPacket.Message.class, ids[0]++, Side.SERVER);
+        net.registerMessage(BagSettingsStatePacket.Handler.class, BagSettingsStatePacket.class, ids[0]++, Side.CLIENT);
         net.registerMessage(SwitchPagePacket.class, SwitchPagePacket.Message.class, ids[0]++, Side.SERVER);
         net.registerMessage(
             RequestCurrentPagePacket.class,
@@ -295,6 +309,12 @@ public class CommonProxy {
 
     /** Server -> client page highlight refresh for the open backpack GUI. */
     public void refreshPageButtonsIfOpen(final int page) {}
+
+    /** Client-only: fly speed / vertical acceleration / inertia of the worn backpack. */
+    public void applyBackpackClientFlight(final EntityPlayer player, final ItemStack bag) {}
+
+    /** Server -> client refresh of the backpack's "extra config" page. */
+    public void refreshExtraConfigIfOpen() {}
 
     public EntityPlayer getPlayerEntity(final MessageContext context) {
         return context.getServerHandler().playerEntity;

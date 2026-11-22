@@ -3,6 +3,7 @@ package elinarcurios.client;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.world.World;
 import net.minecraftforge.client.MinecraftForgeClient;
@@ -19,6 +20,7 @@ import elinarcurios.gui.GuiInfiniteBackpack;
 import elinarcurios.gui.GuiLunchBox;
 import elinarcurios.item.ItemElinarWand;
 import elinarcurios.player.BagProperty;
+import elinarcurios.util.BagSettings;
 
 @SideOnly(Side.CLIENT)
 public final class ClientProxy extends CommonProxy {
@@ -77,6 +79,37 @@ public final class ClientProxy extends CommonProxy {
     public void refreshBuffButtonsIfOpen() {
         if (Minecraft.getMinecraft().currentScreen instanceof GuiInfiniteBackpack) {
             ((GuiInfiniteBackpack) Minecraft.getMinecraft().currentScreen).refreshBuffButtons();
+        }
+    }
+
+    @Override
+    public void refreshExtraConfigIfOpen() {
+        if (Minecraft.getMinecraft().currentScreen instanceof GuiInfiniteBackpack) {
+            ((GuiInfiniteBackpack) Minecraft.getMinecraft().currentScreen).refreshExtraConfig();
+        }
+    }
+
+    @Override
+    public void applyBackpackClientFlight(final EntityPlayer player, final ItemStack bag) {
+        final float speed = BagSettings.getFloat(bag, BagSettings.FLY_SPEED);
+        player.capabilities.setFlySpeed(0.05F + 0.05F * speed);
+        if (!player.capabilities.isFlying) return;
+
+        final float vertical = BagSettings.getFloat(bag, BagSettings.FLY_VERTICAL);
+        if (vertical > 0F && player.motionY != 0D && !player.onGround) {
+            final boolean jump = Minecraft.getMinecraft().gameSettings.keyBindJump.getIsKeyPressed();
+            final boolean sneak = Minecraft.getMinecraft().gameSettings.keyBindSneak.getIsKeyPressed();
+            if (jump && !sneak) {
+                player.motionY = 0.225F * vertical;
+            } else if (sneak && !jump) {
+                player.motionY = -0.225F * vertical;
+            }
+        }
+
+        if (BagSettings.getBoolean(bag, BagSettings.FLY_INERTIA) && player.moveForward == 0F
+            && player.moveStrafing == 0F) {
+            player.motionX *= 0.5D;
+            player.motionZ *= 0.5D;
         }
     }
 

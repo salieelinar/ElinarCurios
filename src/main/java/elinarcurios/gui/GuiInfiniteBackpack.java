@@ -44,13 +44,25 @@ import elinarcurios.item.ItemInfiniteBackpack;
 import elinarcurios.network.EquipUnequipBagPacket;
 import elinarcurios.network.InfiniteBagClick;
 import elinarcurios.network.RequestCurrentPagePacket;
+import elinarcurios.network.SetBagSettingPacket;
 import elinarcurios.network.SwitchPagePacket;
 import elinarcurios.network.ToggleBuffPacket;
+import elinarcurios.util.BagSettings;
 
 public final class GuiInfiniteBackpack extends GuiContainer {
 
     private static final RenderItemInfinity renderItemInfinity = new RenderItemInfinity();
     private final boolean fromWearing;
+
+    // Extra configuration overlay (movement / perception), opened from the top bar.
+    private static final int BTN_EXTRA_CONFIG = 200;
+    private static final int BTN_EXTRA_DONE = 201;
+    private static final int BTN_EXTRA_BASE = 300;
+    private static final int PANEL_WIDTH = 300;
+    private static final int PANEL_HEIGHT = 232;
+    private static final int ROW_TOP = 32;
+    private static final int ROW_HEIGHT = 16;
+    private boolean extraConfigOpen;
 
     private Slot clickedSlot;
     private boolean isRightMouseClick;
@@ -125,6 +137,106 @@ public final class GuiInfiniteBackpack extends GuiContainer {
         // refreshes the tab highlight. Sending a SwitchPagePacket here would be destructive:
         // the server would switch (and re-remember) the page back to the stale client value.
         ElinarCurios.networkWrapper.sendToServer(new RequestCurrentPagePacket.Message());
+
+        // "Extra config" entry, left of the passive-buff buttons.
+        buttonList.add(
+            new GuiMiniButton(
+                BTN_EXTRA_CONFIG,
+                guiLeft + xSize - 56 - (ItemInfiniteBackpack.BUFF_KEYS.length + 1) * 38,
+                guiTop + 3,
+                34,
+                13,
+                I18n.format("button.elinarcurios.extra")));
+        buildExtraConfigButtons();
+    }
+
+    /** Builds the controls of the extra-config page (hidden until the page is opened). */
+    private void buildExtraConfigButtons() {
+        final int panelX = guiLeft + (xSize - PANEL_WIDTH) / 2;
+        final int panelY = guiTop + 22;
+        buttonList.add(
+            new GuiMiniButton(
+                BTN_EXTRA_DONE,
+                panelX + PANEL_WIDTH - 46,
+                panelY + 5,
+                40,
+                12,
+                I18n.format("button.elinarcurios.extra.done")));
+        for (int id = 0; id < BagSettings.COUNT; id++) {
+            final int rowY = panelY + ROW_TOP + id * ROW_HEIGHT;
+            if (BagSettings.isBoolean(id)) {
+                final GuiMiniButton toggle = new GuiMiniButton(
+                    BTN_EXTRA_BASE + id * 3,
+                    panelX + 190,
+                    rowY,
+                    80,
+                    12,
+                    booleanLabel(id));
+                toggle.visible = false;
+                buttonList.add(toggle);
+            } else {
+                final GuiMiniButton minus = new GuiMiniButton(BTN_EXTRA_BASE + id * 3, panelX + 190, rowY, 12, 12, "-");
+                final GuiMiniButton plus = new GuiMiniButton(
+                    BTN_EXTRA_BASE + id * 3 + 1,
+                    panelX + 252,
+                    rowY,
+                    12,
+                    12,
+                    "+");
+                minus.visible = false;
+                plus.visible = false;
+                buttonList.add(minus);
+                buttonList.add(plus);
+            }
+        }
+        setExtraConfigOpen(false);
+    }
+
+    private String booleanLabel(final int settingId) {
+        final ItemStack bag = getContainer().getBagStack();
+        return I18n
+            .format(BagSettings.getBoolean(bag, settingId) ? "elinarcurios.config.on" : "elinarcurios.config.off");
+    }
+
+    private void setExtraConfigOpen(final boolean open) {
+        extraConfigOpen = open;
+        for (Object o : buttonList) {
+            final GuiButton b = (GuiButton) o;
+            final boolean configControl = b.id == BTN_EXTRA_DONE || b.id >= BTN_EXTRA_BASE;
+            b.visible = open ? configControl : !configControl;
+        }
+        refreshExtraConfig();
+    }
+
+    /** Re-reads the bag NBT and refreshes the toggle labels (state packet / page refresh). */
+    public void refreshExtraConfig() {
+        for (Object o : buttonList) {
+            final GuiButton b = (GuiButton) o;
+            if (b.id == BTN_EXTRA_DONE || b.id < BTN_EXTRA_BASE) continue;
+            final int settingId = (b.id - BTN_EXTRA_BASE) / 3;
+            if (settingId < 0 || settingId >= BagSettings.COUNT) continue;
+            if (BagSettings.isBoolean(settingId)) b.displayString = booleanLabel(settingId);
+        }
+    }
+
+    private void handleExtraConfigButton(final int local) {
+        final int settingId = local / 3;
+        final int action = local % 3;
+        if (settingId < 0 || settingId >= BagSettings.COUNT) return;
+        final ItemStack bag = getContainer().getBagStack();
+        if (!ItemInfiniteBackpack.isInfiniteBackpack(bag)) return;
+
+        final float current = BagSettings.getFloat(bag, settingId);
+        final float next;
+        if (BagSettings.isBoolean(settingId)) {
+            next = current != 0F ? 0F : 1F;
+        } else {
+            final float step = BagSettings.step(settingId) * (isShiftKeyDown() ? 10F : 1F);
+            next = action == 1 ? current + step : current - step;
+        }
+        final float stored = BagSettings.set(bag, settingId, next);
+        ElinarCurios.networkWrapper.sendToServer(new SetBagSettingPacket.Message(settingId, stored));
+        refreshExtraConfig();
     }
 
     private ContainerInfiniteBackpack getContainer() {
@@ -155,6 +267,12 @@ public final class GuiInfiniteBackpack extends GuiContainer {
                 new EquipUnequipBagPacket.Message(
                     fromWearing ? EquipUnequipBagPacket.UNEQUIP : EquipUnequipBagPacket.EQUIP));
             mc.displayGuiScreen(null);
+        } else if (button.id == BTN_EXTRA_CONFIG) {
+            setExtraConfigOpen(true);
+        } else if (button.id == BTN_EXTRA_DONE) {
+            setExtraConfigOpen(false);
+        } else if (button.id >= BTN_EXTRA_BASE) {
+            handleExtraConfigButton(button.id - BTN_EXTRA_BASE);
         } else if (button.id >= 1 && button.id <= ItemInfiniteBackpack.BUFF_KEYS.length) {
             ElinarCurios.networkWrapper.sendToServer(new ToggleBuffPacket.Message((byte) (button.id - 1)));
         } else if (button.id >= 100 && button.id < 100 + ItemInfiniteBackpack.PAGE_COUNT) {
@@ -196,6 +314,10 @@ public final class GuiInfiniteBackpack extends GuiContainer {
 
     @Override
     public void drawScreen(final int mouseX, final int mouseY, final float partialTick) {
+        if (extraConfigOpen) {
+            drawExtraConfigScreen(mouseX, mouseY);
+            return;
+        }
         drawDefaultBackground();
         drawGuiContainerBackgroundLayer(partialTick, mouseX, mouseY);
         GL11.glDisable(GL12.GL_RESCALE_NORMAL);
@@ -287,6 +409,48 @@ public final class GuiInfiniteBackpack extends GuiContainer {
         GL11.glEnable(GL11.GL_LIGHTING);
         GL11.glEnable(GL11.GL_DEPTH_TEST);
         RenderHelper.enableStandardItemLighting();
+    }
+
+    private void drawExtraConfigScreen(final int mouseX, final int mouseY) {
+        drawDefaultBackground();
+        final int panelX = guiLeft + (xSize - PANEL_WIDTH) / 2;
+        final int panelY = guiTop + 22;
+        drawRect(panelX - 2, panelY - 2, panelX + PANEL_WIDTH + 2, panelY + PANEL_HEIGHT + 2, 0xFF101010);
+        drawRect(panelX, panelY, panelX + PANEL_WIDTH, panelY + PANEL_HEIGHT, 0xFF2B2B2B);
+        drawRect(panelX, panelY, panelX + PANEL_WIDTH, panelY + 18, 0xFF3F3F3F);
+        fontRendererObj
+            .drawStringWithShadow(I18n.format("elinarcurios.config.title"), panelX + 8, panelY + 5, 0xFFFFFF);
+
+        final ItemStack bag = getContainer().getBagStack();
+        for (int id = 0; id < BagSettings.COUNT; id++) {
+            final int rowY = panelY + ROW_TOP + id * ROW_HEIGHT;
+            fontRendererObj
+                .drawStringWithShadow(I18n.format(BagSettings.LANG_KEYS[id]), panelX + 10, rowY + 2, 0xE0E0E0);
+            if (!BagSettings.isBoolean(id)) {
+                final String value = String.format(java.util.Locale.ROOT, "%.1f", BagSettings.getFloat(bag, id));
+                fontRendererObj.drawStringWithShadow(value, panelX + 226, rowY + 2, 0xFFFF80);
+            }
+        }
+
+        for (Object o : buttonList) {
+            final GuiButton button = (GuiButton) o;
+            if (button.visible) button.drawButton(mc, mouseX, mouseY);
+        }
+    }
+
+    @Override
+    public void updateScreen() {
+        super.updateScreen();
+        if (extraConfigOpen) refreshExtraConfig();
+    }
+
+    @Override
+    protected void keyTyped(final char typedChar, final int keyCode) {
+        if (extraConfigOpen && keyCode == Keyboard.KEY_ESCAPE) {
+            setExtraConfigOpen(false);
+            return;
+        }
+        super.keyTyped(typedChar, keyCode);
     }
 
     private void drawItemStack(ItemStack p_146982_1_, int p_146982_2_, int p_146982_3_, String p_146982_4_) {
@@ -430,6 +594,20 @@ public final class GuiInfiniteBackpack extends GuiContainer {
      * Called when the mouse is clicked.
      */
     protected void mouseClicked(int p_73864_1_, int p_73864_2_, int p_73864_3_) {
+        if (extraConfigOpen) {
+            if (p_73864_3_ == 0) {
+                for (int i = 0; i < this.buttonList.size(); ++i) {
+                    final GuiButton guibutton = (GuiButton) this.buttonList.get(i);
+                    if (!guibutton.visible) continue;
+                    if (guibutton.mousePressed(this.mc, p_73864_1_, p_73864_2_)) {
+                        this.selectedButton = guibutton;
+                        guibutton.func_146113_a(this.mc.getSoundHandler());
+                        this.actionPerformed(guibutton);
+                    }
+                }
+            }
+            return;
+        }
         if (p_73864_3_ == 0) {
             for (int l = 0; l < this.buttonList.size(); ++l) {
                 GuiButton guibutton = (GuiButton) this.buttonList.get(l);
@@ -527,6 +705,7 @@ public final class GuiInfiniteBackpack extends GuiContainer {
      */
     @SuppressWarnings("unchecked")
     protected void mouseClickMove(int p_146273_1_, int p_146273_2_, int p_146273_3_, long p_146273_4_) {
+        if (extraConfigOpen) return;
         Slot slot = getSlotAtPosition(p_146273_1_, p_146273_2_);
         ItemStack itemstack = mc.thePlayer.inventory.getItemStack();
 
@@ -584,6 +763,13 @@ public final class GuiInfiniteBackpack extends GuiContainer {
 
     @Override
     protected void mouseMovedOrUp(int p_146286_1_, int p_146286_2_, int p_146286_3_) {
+        if (extraConfigOpen) {
+            if (selectedButton != null && p_146286_3_ == 0) {
+                selectedButton.mouseReleased(p_146286_1_, p_146286_2_);
+                selectedButton = null;
+            }
+            return;
+        }
         if (selectedButton != null && p_146286_3_ == 0) {
             selectedButton.mouseReleased(p_146286_1_, p_146286_2_);
             selectedButton = null;
