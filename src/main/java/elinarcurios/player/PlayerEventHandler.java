@@ -27,7 +27,6 @@ import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.PlayerEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import elinarcurios.Config;
-import elinarcurios.compat.ThaumGogglesSlot;
 import elinarcurios.compat.WitcheryPowerCompat;
 import elinarcurios.item.ItemInfiniteBackpack;
 import elinarcurios.util.BagUtils;
@@ -187,10 +186,6 @@ public class PlayerEventHandler {
             final EntityItem drop = iterator.next();
             if (drop == null) continue;
             final ItemStack stack = drop.getEntityItem();
-            if (Loader.isModLoaded("Thaumcraft") && ThaumGogglesSlot.isVirtual(stack)) {
-                iterator.remove();
-                continue;
-            }
             if (!ItemInfiniteBackpack.isInfiniteBackpack(stack)) continue;
             iterator.remove();
             rememberBag(player, stack.copy());

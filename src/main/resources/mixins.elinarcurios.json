@@ -9,6 +9,10 @@
     "MixinEntityAITarget",
     "MixinWorldClosestVulnerablePlayer",
     "MixinEntityPlayerSlotGuard",
+
+    "MixinRenderEventHandlerGoggles",
+    "MixinTileNodeRendererGoggles",
+    "MixinWailaNodeAspects",
     "MixinMTEChemicalPlant",
     "MixinMTEPurificationUnitDegasser",
     "MixinMTEPurificationUnitBaryonicPerfection",
