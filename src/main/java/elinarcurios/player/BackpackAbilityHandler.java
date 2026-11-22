@@ -15,10 +15,12 @@ import net.minecraft.item.ItemStack;
 import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 
+import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.eventhandler.EventPriority;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
 import elinarcurios.ElinarCurios;
+import elinarcurios.compat.ThaumGogglesSlot;
 import elinarcurios.util.BagSettings;
 import elinarcurios.util.BagUtils;
 import elinarcurios.util.DeArmorCompat;
@@ -56,6 +58,10 @@ public final class BackpackAbilityHandler {
         if (player == null || player.worldObj == null || player.isDead) return;
 
         final ItemStack bag = BagUtils.getWornInfiniteBackpack(player);
+        // 虚拟护目镜：把 DE 头盔那套 IGoggles/IRevealer 放进空头盔槽（TC/WAILA 原生识别）。
+        if (Loader.isModLoaded("Thaumcraft")) {
+            ThaumGogglesSlot.manage(player, bag);
+        }
         if (bag == null) {
             // No bag: give everything back. Flight is only revoked when DE is not going to
             // pick it up again (a worn draconic chest keeps the player flying without a gap);

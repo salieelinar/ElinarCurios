@@ -14,8 +14,8 @@
     "MixinMTEPurificationUnitBaryonicPerfection",
     "MixinHazardProtection",
     "MixinWandManager",
-    "MixinRenderEventHandler",
-    "MixinTileNodeRenderer",
+
+
     "MixinGeneticsUtil",
     "MixinArmorApiaristHelper",
     "MixinGSEventHandler",

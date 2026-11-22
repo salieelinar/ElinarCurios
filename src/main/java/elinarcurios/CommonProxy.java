@@ -24,6 +24,7 @@ import elinarcurios.item.ItemElinarReactorCore;
 import elinarcurios.item.ItemElinarTianxuanCore;
 import elinarcurios.item.ItemInfiniteBackpack;
 import elinarcurios.item.ItemLunchBox;
+import elinarcurios.item.ItemVirtualGoggles;
 import elinarcurios.item.ItemWirelessBattery;
 import elinarcurios.machine.ElinarChunkManager;
 import elinarcurios.machine.ElinarMachines;
@@ -73,6 +74,9 @@ public class CommonProxy {
         if (Loader.isModLoaded("Thaumcraft")) {
             ThaumcraftCompat.init();
             ThaumcraftCompat.registerItem();
+            // 虚拟护目镜：把 DE 头盔那套 IGoggles/IRevealer 放到空头盔槽，让 TC/WAILA 原生识别。
+            ItemVirtualGoggles.instance = new ItemVirtualGoggles();
+            GameRegistry.registerItem(ItemVirtualGoggles.instance, "VirtualGoggles");
         }
 
         // Wireless battery (天玄·虚空电池): reads/writes the GT wireless energy
