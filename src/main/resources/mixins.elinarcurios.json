@@ -11,7 +11,7 @@
     "MixinEntityPlayerSlotGuard",
 
     "MixinRenderEventHandlerGoggles",
-    "MixinTileNodeRendererGoggles",
+
     "MixinWailaNodeAspects",
     "MixinTileEntityRendererDispatcherGoggles",
     "MixinMTEChemicalPlant",

@@ -30,6 +30,10 @@ public final class ClientProxy extends CommonProxy {
         super.preInit();
         // 本 mod 所有物品 tooltip 的末行标识（纯客户端事件）。preInit 里挂上，早于任何 GUI 打开。
         TooltipBadgeHandler.register();
+        // 每 tick 缓存一次护目镜展示状态，渲染路径只读缓存。
+        FMLCommonHandler.instance()
+            .bus()
+            .register(new ClientTickHandler());
     }
 
     @Override
