@@ -60,6 +60,17 @@ public final class BagOverlay {
 
     // ------------------------------------------------------------------ rendering
 
+    /**
+     * Entry point from {@code MixinGuiContainerBagOverlay}: runs at the TAIL of
+     * {@code GuiContainer.drawScreen}, i.e. after slot items, the carried item and the
+     * hovered-slot tooltip, so the panel is a clean top layer.
+     */
+    public static void renderAtTail(final int mouseX, final int mouseY) {
+        final GuiScreen screen = Minecraft.getMinecraft().currentScreen;
+        if (screen == null) return;
+        render(screen, mouseX, mouseY);
+    }
+
     public static void render(final GuiScreen screen, final int mouseX, final int mouseY) {
         if (!BagOverlayState.isOpen()) return;
         final Minecraft mc = Minecraft.getMinecraft();
@@ -87,6 +98,11 @@ public final class BagOverlay {
         GL11.glEnable(GL11.GL_TEXTURE_2D);
         GL11.glEnable(GL11.GL_ALPHA_TEST);
         GL11.glColor4f(1F, 1F, 1F, 1F);
+
+        // Drop shadow + hard border: makes the panel read as its own window instead of a
+        // slab of GUI texture glued onto the screen below it.
+        rect(x - 3, y - 3, x + width + 3, y + height + 3, 0x50000000);
+        rect(x - 1, y - 1, x + width + 1, y + height + 1, 0xFF000000);
 
         drawBackground(mc, x, y, width, height);
         drawTitle(mc, x, y);
@@ -325,10 +341,6 @@ public final class BagOverlay {
         if (button != 0 && button != 1) return true;
 
         final int pageX = x + pageTabStart();
-        if (mouseY < y + 18 && mouseX >= x + 2 && mouseX < pageX - 2) {
-            BagOverlayState.beginDrag(mouseX - x, mouseY - y);
-            return true;
-        }
         for (int i = 0; i < ItemInfiniteBackpack.PAGE_COUNT; i++) {
             final int buttonX = pageX + i * PAGE_TAB_STEP;
             if (hovered(mouseX, mouseY, buttonX, y + BUTTON_Y, PAGE_TAB_WIDTH, BUTTON_HEIGHT)) {
@@ -358,10 +370,14 @@ public final class BagOverlay {
             return true;
         }
         final int slot = slotAt(x, y, mouseX, mouseY);
-        if (slot >= 0 && button == 0) {
-            BagOverlayState.clickSlot(slot, 0, isShiftDown());
+        if (slot >= 0) {
+            BagOverlayState.clickSlot(slot, button, isShiftDown());
             return true;
         }
+        // Everything that is not a slot or a button is a drag handle: the panel can be picked up
+        // anywhere (title bar, gaps between the tabs, the empty margins around the grid, the
+        // border area) and moved around freely.
+        if (button == 0) BagOverlayState.beginDrag(mouseX - x, mouseY - y);
         return true;
     }
 

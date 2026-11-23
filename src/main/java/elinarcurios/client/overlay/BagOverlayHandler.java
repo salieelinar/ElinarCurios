@@ -1,6 +1,7 @@
 package elinarcurios.client.overlay;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraftforge.client.event.GuiScreenEvent;
 
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
@@ -22,6 +23,10 @@ public class BagOverlayHandler {
 
     @SubscribeEvent
     public void onDrawScreen(final GuiScreenEvent.DrawScreenEvent.Post event) {
+        // Container screens are drawn at the TAIL of GuiContainer.drawScreen (see
+        // MixinGuiContainerBagOverlay), i.e. after the carried item and the tooltip; plain
+        // GuiScreens have nothing drawn after this event.
+        if (event.gui instanceof GuiContainer) return;
         BagOverlay.render(event.gui, event.mouseX, event.mouseY);
     }
 

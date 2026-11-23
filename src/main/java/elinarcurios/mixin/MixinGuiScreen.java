@@ -1,5 +1,7 @@
 package elinarcurios.mixin;
 
+import net.minecraft.client.gui.GuiScreen;
+
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -18,7 +20,7 @@ import elinarcurios.client.overlay.BagOverlay;
  * panel. The overlay itself is client-only; on a dedicated server the {@code GuiScreen} target does
  * not exist and this mixin is skipped.
  */
-@Mixin(targets = "net.minecraft.client.gui.GuiScreen", remap = true)
+@Mixin(GuiScreen.class)
 public abstract class MixinGuiScreen {
 
     @Inject(method = "handleMouseInput", at = @At("HEAD"), cancellable = true)
