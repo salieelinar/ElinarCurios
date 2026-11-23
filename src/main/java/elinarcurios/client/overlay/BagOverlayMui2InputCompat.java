@@ -33,7 +33,12 @@ public final class BagOverlayMui2InputCompat {
         MinecraftForge.EVENT_BUS.register(new Handler());
     }
 
-    private static final class Handler {
+    /**
+     * Must be public: FML's ASMEventHandler generates its invoker class in a separate
+     * {@code ASMClassLoader}, and a private nested class makes it throw {@code IllegalAccessError}
+     * when the event fires.
+     */
+    public static final class Handler {
 
         @SubscribeEvent(priority = EventPriority.HIGHEST)
         public void onMouseInputPre(final MouseInputEvent.Pre event) {
