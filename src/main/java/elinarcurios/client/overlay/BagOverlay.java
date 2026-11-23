@@ -63,6 +63,7 @@ public final class BagOverlay {
     public static void render(final GuiScreen screen, final int mouseX, final int mouseY) {
         if (!BagOverlayState.isOpen()) return;
         final Minecraft mc = Minecraft.getMinecraft();
+        if (mc.thePlayer == null) return;
         BagOverlayState.ensurePosition(screen.width, screen.height);
         if (BagOverlayState.isDragging()) {
             if (!Mouse.isButtonDown(0)) BagOverlayState.endDrag();
@@ -374,10 +375,10 @@ public final class BagOverlay {
         return false;
     }
 
-    /** Per-tick housekeeping: the overlay only lives while a GUI is open. */
+    /** Per-tick housekeeping: the overlay only lives while a GUI is open in a running world. */
     public static void tick(final Minecraft mc) {
         if (!BagOverlayState.isOpen()) return;
-        if (mc.currentScreen == null) {
+        if (mc.currentScreen == null || mc.thePlayer == null) {
             BagOverlayState.close();
             return;
         }
