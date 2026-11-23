@@ -16,6 +16,7 @@ import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import elinarcurios.CommonProxy;
 import elinarcurios.client.overlay.BagOverlayHandler;
+import elinarcurios.client.overlay.BagOverlayMui2InputCompat;
 import elinarcurios.client.overlay.BagOverlayNEICompat;
 import elinarcurios.client.overlay.BagOverlayState;
 import elinarcurios.compat.ThaumcraftCompat;
@@ -65,6 +66,11 @@ public final class ClientProxy extends CommonProxy {
         // 直接引用 NEI 类型，无 NEI 时整个类不加载。
         if (Loader.isModLoaded("NotEnoughItems")) {
             BagOverlayNEICompat.register();
+        }
+        // MUI2 在 Minecraft.runTick 里 redirect 了 currentScreen 的输入调用并把原始事件先
+        // post 出来；在 HIGHEST 优先级消费浮窗事件，才能让格雷机器等 MUI 界面收不到点击。
+        if (Loader.isModLoaded("modularui2")) {
+            BagOverlayMui2InputCompat.register();
         }
     }
 
