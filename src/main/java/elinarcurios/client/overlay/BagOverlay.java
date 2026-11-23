@@ -61,14 +61,37 @@ public final class BagOverlay {
     // ------------------------------------------------------------------ rendering
 
     /**
-     * Entry point from {@code MixinGuiContainerBagOverlay}: runs at the TAIL of
-     * {@code GuiContainer.drawScreen}, i.e. after slot items, the carried item and the
-     * hovered-slot tooltip, so the panel is a clean top layer.
+     * Entry point from {@code MixinMinecraftBagOverlay}: runs right after the current GUI screen
+     * finished drawing (covers GUI classes that override drawScreen without calling super).
      */
-    public static void renderAtTail(final int mouseX, final int mouseY) {
-        final GuiScreen screen = Minecraft.getMinecraft().currentScreen;
-        if (screen == null) return;
-        render(screen, mouseX, mouseY);
+    public static void renderAfterGui() {
+        if (!BagOverlayState.isOpen()) return;
+        final Minecraft mc = Minecraft.getMinecraft();
+        final GuiScreen screen = mc.currentScreen;
+        if (screen == null || mc.thePlayer == null || mc.displayWidth <= 0 || mc.displayHeight <= 0) return;
+        final int mouseX = Mouse.getX() * screen.width / mc.displayWidth;
+        final int mouseY = screen.height - Mouse.getY() * screen.height / mc.displayHeight - 1;
+
+        // At render-tick END the matrix is not guaranteed to still be the GUI 2D matrix (GUIs that
+        // draw through their own path restore it), so set it up ourselves.
+        GL11.glPushAttrib(GL11.GL_ALL_ATTRIB_BITS);
+        GL11.glMatrixMode(GL11.GL_PROJECTION);
+        GL11.glPushMatrix();
+        GL11.glLoadIdentity();
+        GL11.glOrtho(0, screen.width, screen.height, 0, 1000, 3000);
+        GL11.glMatrixMode(GL11.GL_MODELVIEW);
+        GL11.glPushMatrix();
+        GL11.glLoadIdentity();
+        GL11.glTranslatef(0, 0, -2000);
+        try {
+            render(screen, mouseX, mouseY);
+        } finally {
+            GL11.glMatrixMode(GL11.GL_PROJECTION);
+            GL11.glPopMatrix();
+            GL11.glMatrixMode(GL11.GL_MODELVIEW);
+            GL11.glPopMatrix();
+            GL11.glPopAttrib();
+        }
     }
 
     public static void render(final GuiScreen screen, final int mouseX, final int mouseY) {

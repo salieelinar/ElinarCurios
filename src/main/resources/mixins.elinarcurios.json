@@ -10,7 +10,6 @@
     "MixinWorldClosestVulnerablePlayer",
     "MixinEntityPlayerSlotGuard",
     "MixinGuiScreen",
-    "MixinGuiContainerBagOverlay",
 
     "MixinRenderEventHandlerGoggles",
 

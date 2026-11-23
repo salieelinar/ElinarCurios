@@ -38,6 +38,8 @@ public final class BagOverlayState {
     public static final int WIDTH = 500;
     public static final int HEIGHT = 186;
     public static final int SLOTS = ItemInfiniteBackpack.STORAGE_SLOTS;
+    /** How many pixels of the panel must stay on screen so it can always be grabbed back. */
+    private static final int MIN_VISIBLE = 32;
 
     private static boolean open;
     private static int from = -1;
@@ -45,8 +47,8 @@ public final class BagOverlayState {
     private static final ItemStack[] stacks = new ItemStack[SLOTS];
     private static boolean[] buffs = new boolean[ItemInfiniteBackpack.BUFF_KEYS.length];
 
-    private static int x = -1;
-    private static int y = -1;
+    private static int x = Integer.MIN_VALUE;
+    private static int y = Integer.MIN_VALUE;
     private static boolean dragging;
     private static int dragOffsetX;
     private static int dragOffsetY;
@@ -66,7 +68,7 @@ public final class BagOverlayState {
         open = true;
         from = source;
         Arrays.fill(stacks, null);
-        if (x < 0 || y < 0) {
+        if (x == Integer.MIN_VALUE) {
             final GuiScreen screen = mc.currentScreen;
             if (screen != null) {
                 x = Math.max(0, (screen.width - WIDTH) / 2);
@@ -135,21 +137,35 @@ public final class BagOverlayState {
 
     public static void setPos(final int newX, final int newY) {
         final GuiScreen screen = Minecraft.getMinecraft().currentScreen;
-        final int maxX = screen == null ? 0 : Math.max(0, screen.width - WIDTH);
-        final int maxY = screen == null ? 0 : Math.max(0, screen.height - HEIGHT);
-        x = Math.max(0, Math.min(maxX, newX));
-        y = Math.max(0, Math.min(maxY, newY));
+        if (screen == null) {
+            x = newX;
+            y = newY;
+            return;
+        }
+        x = loose(newX, WIDTH, screen.width);
+        y = loose(newY, HEIGHT, screen.height);
     }
 
-    /** Keeps the panel on screen after a GUI scale change. */
+    /** Keeps at least a grabable strip of the panel visible after GUI scale changes. */
     public static void ensurePosition(final int screenWidth, final int screenHeight) {
         if (screenWidth <= 0 || screenHeight <= 0) return;
-        if (x < 0 || y < 0) {
+        if (x == Integer.MIN_VALUE) {
             x = Math.max(0, (screenWidth - WIDTH) / 2);
             y = Math.max(0, (screenHeight - HEIGHT) / 2 - 12);
         }
-        x = Math.max(0, Math.min(Math.max(0, screenWidth - WIDTH), x));
-        y = Math.max(0, Math.min(Math.max(0, screenHeight - HEIGHT), y));
+        x = loose(x, WIDTH, screenWidth);
+        y = loose(y, HEIGHT, screenHeight);
+    }
+
+    /**
+     * Clamps the panel position so any part of it may leave the screen while a
+     * {@link #MIN_VISIBLE}px strip stays reachable — the user can drag the panel mostly
+     * off-screen to keep the machine GUI in the middle free.
+     */
+    private static int loose(final int value, final int size, final int screenSize) {
+        final int min = MIN_VISIBLE - size;
+        final int max = screenSize - MIN_VISIBLE;
+        return Math.max(min, Math.min(max, value));
     }
 
     // ------------------------------------------------------------------ sync
