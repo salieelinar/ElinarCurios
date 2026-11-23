@@ -14,11 +14,14 @@ import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import elinarcurios.CommonProxy;
+import elinarcurios.client.overlay.BagOverlayHandler;
+import elinarcurios.client.overlay.BagOverlayState;
 import elinarcurios.compat.ThaumcraftCompat;
 import elinarcurios.gui.GuiEternalChest;
 import elinarcurios.gui.GuiInfiniteBackpack;
 import elinarcurios.gui.GuiLunchBox;
 import elinarcurios.item.ItemElinarWand;
+import elinarcurios.network.BagOverlaySyncPacket;
 import elinarcurios.player.BagProperty;
 import elinarcurios.util.BagSettings;
 
@@ -50,6 +53,12 @@ public final class ClientProxy extends CommonProxy {
             .bus()
             .register(new KeyInputHandler());
         net.minecraftforge.common.MinecraftForge.EVENT_BUS.register(new BackRenderHandler());
+        // 无尽背包浮窗:Forge 事件(绘制/鼠标/键盘)与 FML 事件(tick)分属两条总线,同一个实例都挂。
+        final BagOverlayHandler bagOverlayHandler = new BagOverlayHandler();
+        net.minecraftforge.common.MinecraftForge.EVENT_BUS.register(bagOverlayHandler);
+        FMLCommonHandler.instance()
+            .bus()
+            .register(bagOverlayHandler);
     }
 
     @Override
@@ -126,6 +135,11 @@ public final class ClientProxy extends CommonProxy {
         } else if (Minecraft.getMinecraft().currentScreen instanceof GuiLunchBox) {
             ((GuiLunchBox) Minecraft.getMinecraft().currentScreen).refreshPageButtons(page);
         }
+    }
+
+    @Override
+    public void handleBagOverlaySync(final BagOverlaySyncPacket message) {
+        BagOverlayState.onSync(message);
     }
 
     @Override

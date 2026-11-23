@@ -7,6 +7,7 @@ keys.elinarcurios.open=Open Infinite Backpack
 button.elinarcurios.equip=Equip
 button.elinarcurios.unequip=Unequip
 elinarcurios:messages.already.equipped=You are already wearing something on your back!
+elinarcurios:messages.bag_missing=The backpack is no longer on you; the floating panel was closed
 item.elinarcurios.tooltip.motto=Shouldering infinity, achieving eternity.
 item.elinarcurios.tooltip.slots=Slots used: %s / %s
 item.elinarcurios.tooltip.max=Each slot can hold up to 2147483647 items

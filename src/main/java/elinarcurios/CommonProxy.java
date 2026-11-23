@@ -29,6 +29,11 @@ import elinarcurios.item.ItemWirelessBattery;
 import elinarcurios.machine.ElinarChunkManager;
 import elinarcurios.machine.ElinarMachines;
 import elinarcurios.meout.MEOutputFlushHandler;
+import elinarcurios.network.BagOverlayBuffPacket;
+import elinarcurios.network.BagOverlayClickPacket;
+import elinarcurios.network.BagOverlayPagePacket;
+import elinarcurios.network.BagOverlayRequestPacket;
+import elinarcurios.network.BagOverlaySyncPacket;
 import elinarcurios.network.BagSettingsStatePacket;
 import elinarcurios.network.BuffStatePacket;
 import elinarcurios.network.CurrentPagePacket;
@@ -246,6 +251,17 @@ public class CommonProxy {
         // 天玄之杖:玩家共享魔力池快照(服务端 -> 杖主人客户端)。客户端缓存是 HUD/提示/
         // 工作台灵气判断的唯一显示来源,保证"工作台一把、手上一把"显示同一个数。
         net.registerMessage(WandPoolSyncPacket.class, WandPoolSyncPacket.Message.class, ids[0]++, Side.CLIENT);
+        // 无尽背包浮窗:客户端浮层 + 服务端无状态影子容器(不占 openContainer)。
+        // 请求/点击/切页/buff 四个 C→S 包,一个 S→C 快照包。
+        net.registerMessage(
+            BagOverlayRequestPacket.class,
+            BagOverlayRequestPacket.Message.class,
+            ids[0]++,
+            Side.SERVER);
+        net.registerMessage(BagOverlayClickPacket.class, BagOverlayClickPacket.Message.class, ids[0]++, Side.SERVER);
+        net.registerMessage(BagOverlayPagePacket.class, BagOverlayPagePacket.Message.class, ids[0]++, Side.SERVER);
+        net.registerMessage(BagOverlayBuffPacket.class, BagOverlayBuffPacket.Message.class, ids[0]++, Side.SERVER);
+        net.registerMessage(BagOverlaySyncPacket.Handler.class, BagOverlaySyncPacket.class, ids[0]++, Side.CLIENT);
     }
 
     public void init() {
@@ -319,6 +335,9 @@ public class CommonProxy {
 
     /** Server -> client refresh of the backpack's "extra config" page. */
     public void refreshExtraConfigIfOpen() {}
+
+    /** Server -> client floating backpack overlay snapshot (client-only implementation). */
+    public void handleBagOverlaySync(final BagOverlaySyncPacket message) {}
 
     public EntityPlayer getPlayerEntity(final MessageContext context) {
         return context.getServerHandler().playerEntity;

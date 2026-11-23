@@ -7,6 +7,7 @@ keys.elinarcurios.open=打开无尽背包
 button.elinarcurios.equip=穿上
 button.elinarcurios.unequip=脱下
 elinarcurios:messages.already.equipped=你的背上已经装备了物品！
+elinarcurios:messages.bag_missing=背包已不在身上，浮窗已关闭
 item.elinarcurios.tooltip.motto=背负无尽，成就永恒
 item.elinarcurios.tooltip.slots=已用格子: %s / %s
 item.elinarcurios.tooltip.max=每格可存储 2147483647 个物品

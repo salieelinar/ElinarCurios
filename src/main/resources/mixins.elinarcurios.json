@@ -9,6 +9,7 @@
     "MixinEntityAITarget",
     "MixinWorldClosestVulnerablePlayer",
     "MixinEntityPlayerSlotGuard",
+    "MixinGuiScreen",
 
     "MixinRenderEventHandlerGoggles",
 
