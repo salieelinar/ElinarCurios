@@ -20,7 +20,7 @@ import elinarcurios.client.overlay.BagOverlay;
  * panel. The overlay itself is client-only; on a dedicated server the {@code GuiScreen} target does
  * not exist and this mixin is skipped.
  */
-@Mixin(GuiScreen.class)
+@Mixin(value = GuiScreen.class, priority = 2000)
 public abstract class MixinGuiScreen {
 
     @Inject(method = "handleMouseInput", at = @At("HEAD"), cancellable = true)

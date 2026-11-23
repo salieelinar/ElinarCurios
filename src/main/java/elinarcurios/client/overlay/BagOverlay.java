@@ -99,6 +99,13 @@ public final class BagOverlay {
         GL11.glEnable(GL11.GL_ALPHA_TEST);
         GL11.glColor4f(1F, 1F, 1F, 1F);
 
+        // The GUI below has already written arbitrary depth values; item rendering (zLevel
+        // 100/200) would be depth-tested against them and lose pixels ("item icons look cut
+        // off"). Clear the depth buffer for the panel, same trick as GTNL's floating window.
+        GL11.glDepthMask(true);
+        GL11.glClearDepth(1.0);
+        GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT);
+
         // Drop shadow + hard border: makes the panel read as its own window instead of a
         // slab of GUI texture glued onto the screen below it.
         rect(x - 3, y - 3, x + width + 3, y + height + 3, 0x50000000);
@@ -112,6 +119,11 @@ public final class BagOverlay {
         drawStorage(mc, x, y, mouseX, mouseY);
         drawCarriedItem(mc, mouseX, mouseY);
         drawHoveredTooltip(mc, screen, x, y, mouseX, mouseY);
+
+        // Do not leave our depth writes behind for whatever draws after the GUI.
+        GL11.glDepthMask(true);
+        GL11.glClearDepth(1.0);
+        GL11.glClear(GL11.GL_DEPTH_BUFFER_BIT);
 
         GL11.glPopMatrix();
         GL11.glPopAttrib();
@@ -199,6 +211,7 @@ public final class BagOverlay {
             if (stack == null) continue;
             final int slotX = x + GRID_X + (i % COLUMNS) * SLOT_SIZE;
             final int slotY = y + GRID_Y + (i / COLUMNS) * SLOT_SIZE;
+            GL11.glDisable(GL11.GL_DEPTH_TEST);
             ITEM_RENDERER.zLevel = 100F;
             ITEM_RENDERER.renderItemAndEffectIntoGUI(mc.fontRenderer, mc.getTextureManager(), stack, slotX, slotY);
             ITEM_RENDERER.renderItemOverlayIntoGUI(mc.fontRenderer, mc.getTextureManager(), stack, slotX, slotY, null);
@@ -218,6 +231,7 @@ public final class BagOverlay {
         RenderHelper.enableGUIStandardItemLighting();
         GL11.glEnable(GL12.GL_RESCALE_NORMAL);
         GL11.glColor4f(1F, 1F, 1F, 1F);
+        GL11.glDisable(GL11.GL_DEPTH_TEST);
         ITEM_RENDERER.zLevel = 200F;
         ITEM_RENDERER
             .renderItemAndEffectIntoGUI(mc.fontRenderer, mc.getTextureManager(), carried, mouseX - 8, mouseY - 8);
@@ -330,7 +344,10 @@ public final class BagOverlay {
             && mouseY >= y
             && mouseY < y + BagOverlayState.HEIGHT;
         if (BagOverlayState.isDragging()) {
-            if (!pressed) BagOverlayState.endDrag();
+            // Only a real button release ends the drag. Pure mouse-move events come through the
+            // same handler with button == -1 and `pressed == false`; ending the drag on those
+            // would cancel it on the first pixel of movement.
+            if (button >= 0 && !pressed) BagOverlayState.endDrag();
             return true;
         }
         if (!inside) return false;

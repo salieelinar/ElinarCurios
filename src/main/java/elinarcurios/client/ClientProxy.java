@@ -10,11 +10,13 @@ import net.minecraftforge.client.MinecraftForgeClient;
 
 import cpw.mods.fml.client.registry.ClientRegistry;
 import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 import elinarcurios.CommonProxy;
 import elinarcurios.client.overlay.BagOverlayHandler;
+import elinarcurios.client.overlay.BagOverlayNEICompat;
 import elinarcurios.client.overlay.BagOverlayState;
 import elinarcurios.compat.ThaumcraftCompat;
 import elinarcurios.gui.GuiEternalChest;
@@ -59,6 +61,11 @@ public final class ClientProxy extends CommonProxy {
         FMLCommonHandler.instance()
             .bus()
             .register(bagOverlayHandler);
+        // NEI 物品面板与浮窗重叠时让 NEI 退让（hideItemPanelSlot）。守卫写调用点：compat 类
+        // 直接引用 NEI 类型，无 NEI 时整个类不加载。
+        if (Loader.isModLoaded("NotEnoughItems")) {
+            BagOverlayNEICompat.register();
+        }
     }
 
     @Override
