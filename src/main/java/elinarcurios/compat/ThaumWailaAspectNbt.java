@@ -10,7 +10,7 @@ import elinarcurios.util.BagSettings;
 import elinarcurios.util.BagUtils;
 import thaumcraft.api.aspects.Aspect;
 import thaumcraft.api.aspects.AspectList;
-import thaumcraft.api.nodes.INode;
+import thaumcraft.api.aspects.IAspectContainer;
 
 /**
  * Builds the "Aspects" NBT payload that Waila's Thaumcraft addon would send when real goggles are
@@ -24,12 +24,12 @@ public final class ThaumWailaAspectNbt {
     /** Returns true when the tag was filled and the caller should short-circuit the original method. */
     public static boolean addAspects(final EntityPlayerMP player, final TileEntity tile, final NBTTagCompound tag) {
         if (player == null || tile == null || tag == null) return false;
-        if (!(tile instanceof INode)) return false;
+        if (!(tile instanceof IAspectContainer)) return false;
 
         final ItemStack bag = BagUtils.getWornInfiniteBackpack(player);
         if (bag == null || !BagSettings.getBoolean(bag, BagSettings.REVEAL)) return false;
 
-        final AspectList aspects = ((INode) tile).getAspects();
+        final AspectList aspects = ((IAspectContainer) tile).getAspects();
         if (aspects == null) return false;
 
         final NBTTagList list = new NBTTagList();

@@ -13,6 +13,7 @@
     "MixinRenderEventHandlerGoggles",
     "MixinTileNodeRendererGoggles",
     "MixinWailaNodeAspects",
+    "MixinTileEntityRendererDispatcherGoggles",
     "MixinMTEChemicalPlant",
     "MixinMTEPurificationUnitDegasser",
     "MixinMTEPurificationUnitBaryonicPerfection",
