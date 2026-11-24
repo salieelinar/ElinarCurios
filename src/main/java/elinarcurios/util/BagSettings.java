@@ -7,17 +7,20 @@ import net.minecraftforge.common.util.Constants.NBT;
 import elinarcurios.item.ItemInfiniteBackpack;
 
 /**
- * Per-backpack "extra configuration" values (movement + perception), stored in the bag NBT.
+ * Per-backpack "extra configuration" values (movement + perception + passive buffs), stored in the
+ * bag NBT.
  *
  * <p>
  * The first {@link #PROTECTION_COUNT} settings are the always-on protections and are NOT exposed
- * here on purpose (GT hazards, Thaumcraft vis discount, bee immunity, space suit). Everything in
- * this class is user adjustable from the backpack GUI's "extra config" page.
+ * here on purpose (GT hazards, Thaumcraft vis discount, bee immunity, space suit). Settings 0-11 are
+ * the original movement/perception page; 12-22 are the leveled buff page; 23-25 are the on/off buff
+ * page. New buff settings default to 0 (off), so existing bags keep their old behaviour.
  */
 public final class BagSettings {
 
     public static final String TAG_SETTINGS = "settings";
 
+    // Page 1: movement / perception.
     public static final int FLIGHT = 0;
     public static final int FLY_SPEED = 1;
     public static final int FLY_VERTICAL = 2;
@@ -30,28 +33,78 @@ public final class BagSettings {
     public static final int NATURALIST = 9;
     public static final int REVEAL = 10;
     public static final int NODES = 11;
-    public static final int COUNT = 12;
+
+    // Page 2: leveled buffs (0 = off, 1 = level I).
+    public static final int BUFF_REGEN = 12;
+    public static final int BUFF_HEALTH_BOOST = 13;
+    public static final int BUFF_RESISTANCE = 14;
+    public static final int BUFF_ABSORPTION = 15;
+    public static final int BUFF_HASTE = 16;
+    public static final int BUFF_STRENGTH = 17;
+    public static final int BUFF_JUMP = 18;
+    public static final int BUFF_RESIZING = 19;
+    public static final int BUFF_REFLECT = 20;
+    public static final int BUFF_SYNTHESIS = 21;
+    public static final int BUFF_VIS_REGEN = 22;
+
+    // Page 4: on/off buffs (no levels).
+    public static final int BUFF_WELL_FED = 23;
+    public static final int BUFF_VAMPIRIC_AURA = 24;
+    public static final int BUFF_SOUL_CROSS = 25;
+
+    public static final int COUNT = 26;
 
     /** NBT keys, in setting id order. */
     public static final String[] KEYS = { "flight", "flySpeed", "flyVertical", "flyLock", "flyInertia", "walkSpeed",
-        "jump", "hillStep", "mineBoost", "naturalist", "reveal", "nodes" };
+        "jump", "hillStep", "mineBoost", "naturalist", "reveal", "nodes", "buffRegen", "buffHealthBoost",
+        "buffResistance", "buffAbsorption", "buffHaste", "buffStrength", "buffJump", "buffResizing", "buffReflect",
+        "buffSynthesis", "buffVisRegen", "buffWellFed", "buffVampiricAura", "buffSoulCross" };
 
     /** Translation keys of the labels, in setting id order. */
     public static final String[] LANG_KEYS = { "elinarcurios.config.flight", "elinarcurios.config.flySpeed",
         "elinarcurios.config.flyVertical", "elinarcurios.config.flyLock", "elinarcurios.config.flyInertia",
         "elinarcurios.config.walkSpeed", "elinarcurios.config.jump", "elinarcurios.config.hillStep",
         "elinarcurios.config.mineBoost", "elinarcurios.config.naturalist", "elinarcurios.config.reveal",
-        "elinarcurios.config.nodes" };
+        "elinarcurios.config.nodes", "elinarcurios.config.buffRegen", "elinarcurios.config.buffHealthBoost",
+        "elinarcurios.config.buffResistance", "elinarcurios.config.buffAbsorption", "elinarcurios.config.buffHaste",
+        "elinarcurios.config.buffStrength", "elinarcurios.config.buffJump", "elinarcurios.config.buffResizing",
+        "elinarcurios.config.buffReflect", "elinarcurios.config.buffSynthesis", "elinarcurios.config.buffVisRegen",
+        "elinarcurios.config.buffWellFed", "elinarcurios.config.buffVampiricAura",
+        "elinarcurios.config.buffSoulCross" };
 
     private static final boolean[] BOOLEAN = { true, false, false, true, true, false, false, true, true, true, true,
-        true };
-    private static final float[] DEFAULTS = { 1F, 0F, 0F, 0F, 0F, 0F, 0F, 1F, 1F, 1F, 1F, 1F };
-    private static final float[] MAXIMUMS = { 1F, 6F, 8F, 1F, 1F, 8F, 15F, 1F, 1F, 1F, 1F, 1F };
+        true, false, false, false, false, false, false, false, false, false, false, false, true, true, true };
+    private static final float[] DEFAULTS = { 1F, 0F, 0F, 0F, 0F, 0F, 0F, 1F, 1F, 1F, 1F, 1F, 0F, 0F, 0F, 0F, 0F, 0F,
+        0F, 0F, 0F, 0F, 0F, 0F, 0F, 0F };
+    private static final float[] MAXIMUMS = { 1F, 6F, 8F, 1F, 1F, 8F, 15F, 1F, 1F, 1F, 1F, 1F, 6F, 10F, 5F, 10F, 10F,
+        10F, 10F, 4F, 10F, 8F, 8F, 1F, 1F, 1F };
 
     private BagSettings() {}
 
     public static boolean isBoolean(final int id) {
         return id >= 0 && id < COUNT && BOOLEAN[id];
+    }
+
+    /** GUI page of a setting: 1 = movement, 2 = leveled buffs, 4 = on/off buffs. */
+    public static int pageOf(final int id) {
+        if (id >= 0 && id <= NODES) return 1;
+        if (id >= BUFF_REGEN && id <= BUFF_VIS_REGEN) return 2;
+        if (id >= BUFF_WELL_FED && id <= BUFF_SOUL_CROSS) return 4;
+        return 0;
+    }
+
+    /** Row index of a setting inside its page. */
+    public static int rowOf(final int id) {
+        final int page = pageOf(id);
+        if (page == 1) return id;
+        if (page == 2) return id - BUFF_REGEN;
+        if (page == 4) return id - BUFF_WELL_FED;
+        return 0;
+    }
+
+    /** True for the buff-page settings (both leveled and on/off pages). */
+    public static boolean isBuffSetting(final int id) {
+        return id >= BUFF_REGEN && id < COUNT;
     }
 
     public static float minValue(final int id) {
@@ -63,6 +116,7 @@ public final class BagSettings {
     }
 
     public static float step(final int id) {
+        if (id >= BUFF_REGEN) return 1F;
         return isBoolean(id) ? 1F : 0.1F;
     }
 

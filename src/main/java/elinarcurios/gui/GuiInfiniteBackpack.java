@@ -47,6 +47,7 @@ import elinarcurios.network.RequestCurrentPagePacket;
 import elinarcurios.network.SetBagSettingPacket;
 import elinarcurios.network.SwitchPagePacket;
 import elinarcurios.network.ToggleBuffPacket;
+import elinarcurios.player.BackpackBuffHandler;
 import elinarcurios.util.BagSettings;
 
 public final class GuiInfiniteBackpack extends GuiContainer {
@@ -58,11 +59,13 @@ public final class GuiInfiniteBackpack extends GuiContainer {
     private static final int BTN_EXTRA_CONFIG = 200;
     private static final int BTN_EXTRA_DONE = 201;
     private static final int BTN_EXTRA_BASE = 300;
+    private static final int BTN_EXTRA_PAGE_BASE = 400;
     private static final int PANEL_WIDTH = 300;
     private static final int PANEL_HEIGHT = 232;
     private static final int ROW_TOP = 32;
     private static final int ROW_HEIGHT = 16;
     private boolean extraConfigOpen;
+    private int configPage = 1;
 
     private Slot clickedSlot;
     private boolean isRightMouseClick;
@@ -162,8 +165,23 @@ public final class GuiInfiniteBackpack extends GuiContainer {
                 40,
                 12,
                 I18n.format("button.elinarcurios.extra.done")));
+
+        // Page buttons: 1-5, left of "完成". Page 1-2 and 4 have content; 3 and 5 stay blank.
+        for (int page = 1; page <= 5; page++) {
+            final GuiMiniButton pageButton = new GuiMiniButton(
+                BTN_EXTRA_PAGE_BASE + page,
+                panelX + 175 + (page - 1) * 15,
+                panelY + 4,
+                13,
+                13,
+                Integer.toString(page));
+            pageButton.visible = false;
+            buttonList.add(pageButton);
+        }
+
         for (int id = 0; id < BagSettings.COUNT; id++) {
-            final int rowY = panelY + ROW_TOP + id * ROW_HEIGHT;
+            if (!BackpackBuffHandler.isAvailable(id)) continue;
+            final int rowY = panelY + ROW_TOP + BagSettings.rowOf(id) * ROW_HEIGHT;
             if (BagSettings.isBoolean(id)) {
                 final GuiMiniButton toggle = new GuiMiniButton(
                     BTN_EXTRA_BASE + id * 3,
@@ -200,12 +218,30 @@ public final class GuiInfiniteBackpack extends GuiContainer {
 
     private void setExtraConfigOpen(final boolean open) {
         extraConfigOpen = open;
+        if (open) configPage = 1;
+        refreshConfigVisibility();
+        refreshExtraConfig();
+    }
+
+    /** Shows only the controls of the current page (page 1 / 2 / 4), plus the page buttons. */
+    private void refreshConfigVisibility() {
         for (Object o : buttonList) {
             final GuiButton b = (GuiButton) o;
-            final boolean configControl = b.id == BTN_EXTRA_DONE || b.id >= BTN_EXTRA_BASE;
-            b.visible = open ? configControl : !configControl;
+            if (b.id == BTN_EXTRA_DONE) {
+                b.visible = extraConfigOpen;
+            } else if (b.id >= BTN_EXTRA_PAGE_BASE) {
+                b.visible = extraConfigOpen;
+                if (b instanceof GuiMiniButton) {
+                    ((GuiMiniButton) b).selected = b.id - BTN_EXTRA_PAGE_BASE == configPage;
+                }
+            } else if (b.id >= BTN_EXTRA_BASE) {
+                final int settingId = (b.id - BTN_EXTRA_BASE) / 3;
+                b.visible = extraConfigOpen && BagSettings.pageOf(settingId) == configPage
+                    && BackpackBuffHandler.isAvailable(settingId);
+            } else {
+                b.visible = !extraConfigOpen;
+            }
         }
-        refreshExtraConfig();
     }
 
     /** Re-reads the bag NBT and refreshes the toggle labels (state packet / page refresh). */
@@ -271,6 +307,10 @@ public final class GuiInfiniteBackpack extends GuiContainer {
             setExtraConfigOpen(true);
         } else if (button.id == BTN_EXTRA_DONE) {
             setExtraConfigOpen(false);
+        } else if (button.id >= BTN_EXTRA_PAGE_BASE) {
+            configPage = button.id - BTN_EXTRA_PAGE_BASE;
+            refreshConfigVisibility();
+            refreshExtraConfig();
         } else if (button.id >= BTN_EXTRA_BASE) {
             handleExtraConfigButton(button.id - BTN_EXTRA_BASE);
         } else if (button.id >= 1 && button.id <= ItemInfiniteBackpack.BUFF_KEYS.length) {
@@ -411,6 +451,25 @@ public final class GuiInfiniteBackpack extends GuiContainer {
         RenderHelper.enableStandardItemLighting();
     }
 
+    private String valueLabel(final int id, final float value) {
+        if (id == BagSettings.BUFF_RESIZING) {
+            switch (Math.round(value)) {
+                case 1:
+                    return "0.25";
+                case 2:
+                    return "0.4";
+                case 3:
+                    return "2.0";
+                case 4:
+                    return "3.0";
+                default:
+                    return "0";
+            }
+        }
+        if (BagSettings.pageOf(id) == 1) return String.format(java.util.Locale.ROOT, "%.1f", value);
+        return Integer.toString(Math.round(value));
+    }
+
     private void drawExtraConfigScreen(final int mouseX, final int mouseY) {
         drawDefaultBackground();
         final int panelX = guiLeft + (xSize - PANEL_WIDTH) / 2;
@@ -423,12 +482,14 @@ public final class GuiInfiniteBackpack extends GuiContainer {
 
         final ItemStack bag = getContainer().getBagStack();
         for (int id = 0; id < BagSettings.COUNT; id++) {
-            final int rowY = panelY + ROW_TOP + id * ROW_HEIGHT;
+            if (BagSettings.pageOf(id) != configPage) continue;
+            if (!BackpackBuffHandler.isAvailable(id)) continue;
+            final int rowY = panelY + ROW_TOP + BagSettings.rowOf(id) * ROW_HEIGHT;
             fontRendererObj
                 .drawStringWithShadow(I18n.format(BagSettings.LANG_KEYS[id]), panelX + 10, rowY + 2, 0xE0E0E0);
             if (!BagSettings.isBoolean(id)) {
-                final String value = String.format(java.util.Locale.ROOT, "%.1f", BagSettings.getFloat(bag, id));
-                fontRendererObj.drawStringWithShadow(value, panelX + 226, rowY + 2, 0xFFFF80);
+                final float value = BagSettings.getFloat(bag, id);
+                fontRendererObj.drawStringWithShadow(valueLabel(id, value), panelX + 226, rowY + 2, 0xFFFF80);
             }
         }
 

@@ -10,6 +10,7 @@ import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
 
 import cpw.mods.fml.relauncher.ReflectionHelper;
+import elinarcurios.player.BackpackBuffHandler;
 
 /**
  * Removes every negative potion effect from a player and puts out the fire.
@@ -40,6 +41,9 @@ public final class StatusCleanse {
         for (final PotionEffect effect : effects) {
             if (effect == null) continue;
             final int id = effect.getPotionID();
+            // Buff-page effects are backpack-granted and must survive this cleanse even when their
+            // mod marks them as "bad" internally (Thaumic Horizons' VisRegen does).
+            if (BackpackBuffHandler.isManagedPotion(id)) continue;
             // The backpack's own Night Vision must never be cleansed, even if a future mapping
             // change makes the isBadEffect lookup return the wrong value.
             if (id == Potion.nightVision.id) continue;

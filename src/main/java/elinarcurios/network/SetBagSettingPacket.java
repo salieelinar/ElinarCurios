@@ -9,6 +9,7 @@ import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import elinarcurios.ElinarCurios;
 import elinarcurios.inventory.ContainerInfiniteBackpack;
 import elinarcurios.item.ItemInfiniteBackpack;
+import elinarcurios.player.BackpackBuffHandler;
 import elinarcurios.util.BagSettings;
 import io.netty.buffer.ByteBuf;
 
@@ -28,6 +29,8 @@ public class SetBagSettingPacket implements IMessageHandler<SetBagSettingPacket.
         if (!ItemInfiniteBackpack.isInfiniteBackpack(bag)) return null;
 
         BagSettings.set(bag, message.settingId, message.value);
+        final BackpackBuffHandler buffHandler = BackpackBuffHandler.getInstance();
+        if (buffHandler != null) buffHandler.applySetting(player, bag, message.settingId);
         ElinarCurios.networkWrapper.sendTo(new BagSettingsStatePacket(BagSettings.readAll(bag)), player);
         return null;
     }

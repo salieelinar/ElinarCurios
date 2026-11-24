@@ -55,6 +55,7 @@ import elinarcurios.network.SyncBagPacket;
 import elinarcurios.network.ToggleBuffPacket;
 import elinarcurios.network.WandPoolSyncPacket;
 import elinarcurios.player.BackpackAbilityHandler;
+import elinarcurios.player.BackpackBuffHandler;
 import elinarcurios.player.ElinarWandLightHandler;
 import elinarcurios.player.PlayerEventHandler;
 import elinarcurios.player.WandPoolSaveHandler;
@@ -173,6 +174,14 @@ public class CommonProxy {
         FMLCommonHandler.instance()
             .bus()
             .register(backpackAbilityHandler);
+
+        // Buff-page passives: server-side refresh of the potion effects selected on the extra
+        // config pages. FML bus only (TickEvent + PlayerLoggedOutEvent).
+        final BackpackBuffHandler backpackBuffHandler = new BackpackBuffHandler();
+        FMLCommonHandler.instance()
+            .bus()
+            .register(backpackBuffHandler);
+        BackpackBuffHandler.setInstance(backpackBuffHandler);
 
         // 天玄之杖池：世界级数据，自管原子写（temp+fsync+ATOMIC_MOVE）。周期性落盘 + 世界保存时落盘；
         // 停服/退档由 ElinarCurios 的生命周期处理。与 TC 无关（无数据时纯 no-op）。

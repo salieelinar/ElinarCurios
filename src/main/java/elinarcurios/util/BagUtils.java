@@ -8,6 +8,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import elinarcurios.ElinarCurios;
 import elinarcurios.item.ItemInfiniteBackpack;
 import elinarcurios.network.SyncBagPacket;
+import elinarcurios.player.BackpackBuffHandler;
 import elinarcurios.player.BagProperty;
 
 /**
@@ -57,6 +58,8 @@ public final class BagUtils {
         final ItemStack worn = prop.getWearable();
         if (worn == null || !(worn.getItem() instanceof ItemInfiniteBackpack)) return;
 
+        // Stop the buff-page potion effects immediately (server side; no-op on the client).
+        BackpackBuffHandler.removeAllFor(player);
         prop.setWearable(null);
         if (!player.inventory.addItemStackToInventory(worn)) {
             player.dropPlayerItemWithRandomChoice(worn, false);
