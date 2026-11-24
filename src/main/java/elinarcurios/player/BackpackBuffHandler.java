@@ -4,19 +4,25 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.potion.Potion;
 import net.minecraft.potion.PotionEffect;
+import net.minecraft.util.MathHelper;
+import net.minecraft.world.World;
 
+import cpw.mods.fml.common.event.FMLServerStoppingEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.PlayerEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
+import elinarcurios.block.BlockBackpackLight;
 import elinarcurios.util.BagSettings;
 import elinarcurios.util.BagUtils;
 
 /**
- * Applies the passive buffs of the backpack's extra-config pages (settings 12-25).
+ * Applies the passive buffs of the backpack's extra-config pages (settings 12-25) and maintains the
+ * invisible miner-light block (setting 22).
  *
  * <p>
  * The modded effects are resolved at runtime from {@link Potion#potionTypes} by class name, so this
@@ -38,6 +44,7 @@ public final class BackpackBuffHandler {
     private static BackpackBuffHandler instance;
 
     private final Map<UUID, Map<Integer, Integer>> applied = new HashMap<UUID, Map<Integer, Integer>>();
+    private final Map<UUID, LightSpot> lights = new HashMap<UUID, LightSpot>();
 
     public static void setInstance(final BackpackBuffHandler handler) {
         instance = handler;
@@ -48,7 +55,9 @@ public final class BackpackBuffHandler {
     }
 
     public static void removeAllFor(final EntityPlayer player) {
-        if (instance != null) instance.removeAll(player);
+        if (instance == null) return;
+        instance.removeAll(player);
+        instance.removeLight(player);
     }
 
     @SubscribeEvent
@@ -60,23 +69,39 @@ public final class BackpackBuffHandler {
         final ItemStack bag = BagUtils.getWornInfiniteBackpack(player);
         if (bag == null) {
             removeAll(player);
+            removeLight(player);
             return;
         }
+
+        updateLight(player, bag);
         if (player.ticksExisted % REFRESH_TICKS != 0) return;
 
         for (int id = BagSettings.BUFF_REGEN; id < BagSettings.COUNT; id++) {
+            if (id == BagSettings.MINE_LIGHT) continue;
             update(player, bag, id);
         }
     }
 
     @SubscribeEvent
     public void onPlayerLoggedOut(final PlayerEvent.PlayerLoggedOutEvent event) {
-        if (event.player != null) applied.remove(event.player.getUniqueID());
+        if (event.player == null) return;
+        removeLight(event.player);
+        applied.remove(event.player.getUniqueID());
+    }
+
+    @SubscribeEvent
+    public void onServerStopping(final FMLServerStoppingEvent event) {
+        for (final LightSpot spot : lights.values()) removeSpot(spot);
+        lights.clear();
     }
 
     /** Called immediately after the GUI writes a setting, so toggles feel instant. */
     public void applySetting(final EntityPlayer player, final ItemStack bag, final int settingId) {
         if (player == null || player.worldObj == null || player.worldObj.isRemote) return;
+        if (settingId == BagSettings.MINE_LIGHT) {
+            updateLight(player, bag);
+            return;
+        }
         if (!BagSettings.isBuffSetting(settingId)) return;
         update(player, bag, settingId);
     }
@@ -150,6 +175,99 @@ public final class BackpackBuffHandler {
         }
     }
 
+    // ---------------------------------------------------------------- miner light
+
+    private void updateLight(final EntityPlayer player, final ItemStack bag) {
+        if (BlockBackpackLight.forLevel(1) == null) return;
+        final int level = Math.max(0, Math.min(15, (int) BagSettings.getFloat(bag, BagSettings.MINE_LIGHT)));
+        if (level <= 0) {
+            removeLight(player);
+            return;
+        }
+
+        final Block block = BlockBackpackLight.forLevel(level);
+        if (block == null) {
+            removeLight(player);
+            return;
+        }
+
+        final World world = player.worldObj;
+        if (world == null) {
+            removeLight(player);
+            return;
+        }
+
+        final UUID id = player.getUniqueID();
+        int x = MathHelper.floor_double(player.posX);
+        int y = MathHelper.floor_double(player.posY + 0.1D);
+        int z = MathHelper.floor_double(player.posZ);
+        if (!isAir(world, x, y, z)) {
+            if (isAir(world, x, y + 1, z)) {
+                y++;
+            } else if (isAir(world, x, y + 2, z)) {
+                y += 2;
+            } else {
+                removeLight(player);
+                return;
+            }
+        }
+
+        LightSpot old = lights.get(id);
+        if (old != null && (old.world != world || old.x != x || old.y != y || old.z != z)) {
+            removeSpot(old);
+            lights.remove(id);
+            old = null;
+        }
+        if (old != null && world.getBlock(old.x, old.y, old.z) != null
+            && !BlockBackpackLight.isLightBlock(world.getBlock(old.x, old.y, old.z))) {
+            lights.remove(id);
+            old = null;
+        }
+
+        if (old == null) {
+            world.setBlock(x, y, z, block, 0, 3);
+            lights.put(id, new LightSpot(world, x, y, z, level));
+        } else if (old.level != level) {
+            world.setBlock(x, y, z, block, 0, 3);
+            old.level = level;
+        }
+    }
+
+    private void removeLight(final EntityPlayer player) {
+        final LightSpot spot = lights.remove(player.getUniqueID());
+        if (spot != null) removeSpot(spot);
+    }
+
+    private static void removeSpot(final LightSpot spot) {
+        if (spot == null || spot.world == null) return;
+        if (BlockBackpackLight.isLightBlock(spot.world.getBlock(spot.x, spot.y, spot.z))) {
+            spot.world.setBlockToAir(spot.x, spot.y, spot.z);
+        }
+    }
+
+    private static boolean isAir(final World world, final int x, final int y, final int z) {
+        return y >= 0 && y < world.getHeight() && world.blockExists(x, y, z) && world.isAirBlock(x, y, z);
+    }
+
+    private static final class LightSpot {
+
+        private final World world;
+        private final int x;
+        private final int y;
+        private final int z;
+        private int level;
+
+        private LightSpot(final World world, final int x, final int y, final int z, final int level) {
+            this.world = world;
+            this.x = x;
+            this.y = y;
+            this.z = z;
+            this.level = level;
+        }
+    }
+
+    // ---------------------------------------------------------------- potion lookup
+
     private Map<Integer, Integer> mapFor(final EntityPlayer player) {
         final UUID id = player.getUniqueID();
         Map<Integer, Integer> map = applied.get(id);
@@ -162,12 +280,14 @@ public final class BackpackBuffHandler {
 
     /** True when the setting's source mod is present (the GUI hides rows that would do nothing). */
     public static boolean isAvailable(final int settingId) {
+        if (settingId == BagSettings.MINE_LIGHT) return BlockBackpackLight.forLevel(1) != null;
         return !BagSettings.isBuffSetting(settingId) || potionFor(settingId) != null;
     }
 
     /** Used by {@link elinarcurios.util.StatusCleanse} so its "bad effect" flag cannot eat a buff. */
     public static boolean isManagedPotion(final int potionId) {
         for (int id = BagSettings.BUFF_REGEN; id < BagSettings.COUNT; id++) {
+            if (id == BagSettings.MINE_LIGHT) continue;
             final Potion potion = potionFor(id);
             if (potion != null && potion.id == potionId) return true;
         }
@@ -200,9 +320,6 @@ public final class BackpackBuffHandler {
                 break;
             case BagSettings.BUFF_JUMP:
                 potion = byVanillaId(8); // Jump Boost
-                break;
-            case BagSettings.BUFF_RESIZING:
-                potion = byClass("PotionResizing"); // Witchery
                 break;
             case BagSettings.BUFF_REFLECT:
                 potion = byClass("PotionReciprocation"); // Blood Magic

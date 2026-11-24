@@ -12,6 +12,7 @@ import cpw.mods.fml.common.network.simpleimpl.MessageContext;
 import cpw.mods.fml.common.network.simpleimpl.SimpleNetworkWrapper;
 import cpw.mods.fml.common.registry.GameRegistry;
 import cpw.mods.fml.relauncher.Side;
+import elinarcurios.block.BlockBackpackLight;
 import elinarcurios.block.BlockElinarLight;
 import elinarcurios.block.BlockEternalChest;
 import elinarcurios.block.BlockPeaceTotem;
@@ -134,6 +135,7 @@ public class CommonProxy {
         BlockPeaceTotem.register();
         BlockEternalChest.register();
         BlockVoidChest.register();
+        BlockBackpackLight.register();
         if (Loader.isModLoaded("Thaumcraft")) {
             BlockElinarLight.register();
             ElinarWandLightHandler.register();

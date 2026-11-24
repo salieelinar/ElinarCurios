@@ -166,11 +166,11 @@ public final class GuiInfiniteBackpack extends GuiContainer {
                 12,
                 I18n.format("button.elinarcurios.extra.done")));
 
-        // Page buttons: 1-5, left of "完成". Page 1-2 and 4 have content; 3 and 5 stay blank.
-        for (int page = 1; page <= 5; page++) {
+        // Page buttons: 1-8, left of "完成". Pages 1-3 have content; 4-8 stay blank.
+        for (int page = 1; page <= 8; page++) {
             final GuiMiniButton pageButton = new GuiMiniButton(
                 BTN_EXTRA_PAGE_BASE + page,
-                panelX + 175 + (page - 1) * 15,
+                panelX + 130 + (page - 1) * 15,
                 panelY + 4,
                 13,
                 13,
@@ -452,20 +452,6 @@ public final class GuiInfiniteBackpack extends GuiContainer {
     }
 
     private String valueLabel(final int id, final float value) {
-        if (id == BagSettings.BUFF_RESIZING) {
-            switch (Math.round(value)) {
-                case 1:
-                    return "0.25";
-                case 2:
-                    return "0.4";
-                case 3:
-                    return "2.0";
-                case 4:
-                    return "3.0";
-                default:
-                    return "0";
-            }
-        }
         if (BagSettings.pageOf(id) == 1) return String.format(java.util.Locale.ROOT, "%.1f", value);
         return Integer.toString(Math.round(value));
     }
