@@ -86,6 +86,8 @@ public final class ElinarCurios {
         if (cpw.mods.fml.common.Loader.isModLoaded("witchery")) {
             elinarcurios.compat.WitcheryPowerCompat.clearAll();
         }
+        // 矿灯是真实世界方块，停服前移除，避免残留在存档里。
+        elinarcurios.player.BackpackBuffHandler.removeAllLightsForServerStop();
     }
 
     /** 退档 / 服务器停止：清空束流虚空的 UUID 注册表，避免跨存档留下死引用；清掉杖池缓存。 */

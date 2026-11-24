@@ -12,7 +12,6 @@ import net.minecraft.potion.PotionEffect;
 import net.minecraft.util.MathHelper;
 import net.minecraft.world.World;
 
-import cpw.mods.fml.common.event.FMLServerStoppingEvent;
 import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 import cpw.mods.fml.common.gameevent.PlayerEvent;
 import cpw.mods.fml.common.gameevent.TickEvent;
@@ -89,8 +88,12 @@ public final class BackpackBuffHandler {
         applied.remove(event.player.getUniqueID());
     }
 
-    @SubscribeEvent
-    public void onServerStopping(final FMLServerStoppingEvent event) {
+    /** Called from the mod's @Mod.EventHandler serverStopping hook (not an EventBus event). */
+    public static void removeAllLightsForServerStop() {
+        if (instance != null) instance.removeAllLights();
+    }
+
+    private void removeAllLights() {
         for (final LightSpot spot : lights.values()) removeSpot(spot);
         lights.clear();
     }
