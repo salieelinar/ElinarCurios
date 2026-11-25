@@ -4,6 +4,7 @@ container.infiniteBackpack=Infinite Backpack
 itemGroup.elinarcurios=Elinar Curios
 keys.elinarcurios.category=Elinar Curios
 keys.elinarcurios.open=Open Infinite Backpack
+keys.elinarcurios.open.overlay=Open Infinite Backpack Overlay
 button.elinarcurios.equip=Equip
 button.elinarcurios.unequip=Unequip
 elinarcurios:messages.already.equipped=You are already wearing something on your back!

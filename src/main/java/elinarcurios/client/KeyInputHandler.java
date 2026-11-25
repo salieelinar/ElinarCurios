@@ -1,6 +1,7 @@
 package elinarcurios.client;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.settings.KeyBinding;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 
@@ -29,8 +30,9 @@ public class KeyInputHandler {
      */
     private EntityPlayer lastTrackedPlayer;
 
-    /** Rising-edge latch for the backpack hotkey (works while a GUI screen is open too). */
-    private boolean lastBagKeyDown;
+    /** Rising-edge latches for the two backpack hotkeys (both are polled physically). */
+    private boolean lastOpenBagKeyDown;
+    private boolean lastOpenOverlayKeyDown;
 
     @SubscribeEvent
     public void onPlayerTick(final TickEvent.PlayerTickEvent event) {
@@ -43,8 +45,12 @@ public class KeyInputHandler {
     }
 
     /**
-     * Single hotkey path for both cases: no GUI open -&gt; vanilla behaviour (server opens the
-     * combined backpack GUI); GUI open -&gt; toggle the floating overlay.
+     * Two independent hotkeys:
+     * <ul>
+     * <li>{@code openBag}: only without any GUI open, asks the server to open the combined
+     * backpack GUI (never replaces a GUI the player is using);</li>
+     * <li>{@code openBagOverlay}: only with a GUI open, toggles the floating panel above it.</li>
+     * </ul>
      *
      * <p>
      * Polled in the client tick instead of {@code InputEvent.KeyInputEvent}: that event is not
@@ -56,28 +62,51 @@ public class KeyInputHandler {
         if (event.phase != TickEvent.Phase.END) return;
         final Minecraft mc = Minecraft.getMinecraft();
         final EntityPlayer player = mc.thePlayer;
-        final int keyCode = KeyBindings.openBag.getKeyCode();
-        final boolean down = keyCode > 0 && Keyboard.isKeyDown(keyCode);
-        final boolean pressed = down && !lastBagKeyDown;
-        lastBagKeyDown = down;
-        if (!pressed || player == null || player.isDead) return;
 
-        if (mc.currentScreen != null) {
-            // A GUI is open: never replace it, toggle the floating panel instead. The vanilla
-            // backpack GUI already shows the bag, so the hotkey is a no-op there.
-            if (mc.currentScreen instanceof GuiInfiniteBackpack) return;
-            if (BagOverlayState.isOpen()) {
-                BagOverlayState.close();
-                return;
-            }
-            final int source = bagSource(player);
-            if (source >= 0) BagOverlayState.requestOpen(source);
+        final boolean openBagDown = isKeyDown(KeyBindings.openBag);
+        final boolean openBagPressed = openBagDown && !lastOpenBagKeyDown;
+        lastOpenBagKeyDown = openBagDown;
+
+        final boolean openOverlayDown = isKeyDown(KeyBindings.openBagOverlay);
+        final boolean openOverlayPressed = openOverlayDown && !lastOpenOverlayKeyDown;
+        lastOpenOverlayKeyDown = openOverlayDown;
+
+        if (player == null || player.isDead) return;
+        if (openBagPressed) openBackpackGui(mc, player);
+        if (openOverlayPressed) toggleBackpackOverlay(mc, player);
+    }
+
+    /**
+     * 「打开无尽背包」: no GUI open -> server opens the combined backpack GUI. While any GUI is
+     * open this hotkey stays idle, so it can never replace the screen the player is using.
+     */
+    private static void openBackpackGui(final Minecraft mc, final EntityPlayer player) {
+        if (mc.currentScreen != null || !mc.inGameHasFocus) return;
+        final byte from;
+        if (BagUtils.clientIsWearingInfiniteBackpack(player)) {
+            from = OpenBagPacket.FROM_WEARING;
+        } else {
+            final ItemStack held = player.getHeldItem();
+            if (held == null || !ItemInfiniteBackpack.isInfiniteBackpack(held)) return;
+            from = OpenBagPacket.FROM_HOLDING;
+        }
+        ElinarCurios.networkWrapper.sendToServer(new OpenBagPacket.Message(from));
+    }
+
+    /**
+     * 「打开无尽背包悬窗」: toggles the floating panel above the current GUI. Without a GUI there
+     * is nothing to float above (the panel only exists while a GUI is open), so it does nothing.
+     */
+    private static void toggleBackpackOverlay(final Minecraft mc, final EntityPlayer player) {
+        if (mc.currentScreen == null) return;
+        // The combined backpack GUI already shows the storage, a floating copy would duplicate it.
+        if (mc.currentScreen instanceof GuiInfiniteBackpack) return;
+        if (BagOverlayState.isOpen()) {
+            BagOverlayState.close();
             return;
         }
-
-        if (!mc.inGameHasFocus) return;
-        final byte from = bagSource(player) == 1 ? OpenBagPacket.FROM_HOLDING : OpenBagPacket.FROM_WEARING;
-        ElinarCurios.networkWrapper.sendToServer(new OpenBagPacket.Message(from));
+        final int source = bagSource(player);
+        if (source >= 0) BagOverlayState.requestOpen(source);
     }
 
     /** 0 = worn, 1 = held, -1 = not available. */
@@ -86,5 +115,10 @@ public class KeyInputHandler {
         final ItemStack held = player.getHeldItem();
         if (held != null && held.getItem() instanceof ItemInfiniteBackpack) return 1;
         return -1;
+    }
+
+    private static boolean isKeyDown(final KeyBinding binding) {
+        final int keyCode = binding.getKeyCode();
+        return keyCode > 0 && Keyboard.isKeyDown(keyCode);
     }
 }

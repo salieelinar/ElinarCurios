@@ -4,6 +4,7 @@ container.infiniteBackpack=无尽背包
 itemGroup.elinarcurios=埃利纳之珍奇
 keys.elinarcurios.category=埃利纳之珍奇
 keys.elinarcurios.open=打开无尽背包
+keys.elinarcurios.open.overlay=打开无尽背包悬窗
 button.elinarcurios.equip=穿上
 button.elinarcurios.unequip=脱下
 elinarcurios:messages.already.equipped=你的背上已经装备了物品！

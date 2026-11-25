@@ -52,6 +52,7 @@ public final class ClientProxy extends CommonProxy {
             MinecraftForgeClient.registerItemRenderer(ItemElinarWand.instance, new ElinarWandRenderer());
         }
         ClientRegistry.registerKeyBinding(KeyBindings.openBag);
+        ClientRegistry.registerKeyBinding(KeyBindings.openBagOverlay);
         FMLCommonHandler.instance()
             .bus()
             .register(new KeyInputHandler());
