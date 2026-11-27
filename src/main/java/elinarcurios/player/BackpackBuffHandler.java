@@ -20,8 +20,9 @@ import elinarcurios.util.BagSettings;
 import elinarcurios.util.BagUtils;
 
 /**
- * Applies the passive buffs of the backpack's extra-config pages (settings 12-25) and maintains the
- * invisible miner-light block (setting 22).
+ * Applies the passive effects of the backpack's extra-config pages: the custom health bonus/regen
+ * ({@link BackpackHealthHandler}), the remaining potion buffs (settings 14-20 and 22-24) and the
+ * invisible miner-light block (setting 21).
  *
  * <p>
  * The modded effects are resolved at runtime from {@link Potion#potionTypes} by class name, so this
@@ -57,6 +58,7 @@ public final class BackpackBuffHandler {
         if (instance == null) return;
         instance.removeAll(player);
         instance.removeLight(player);
+        BackpackHealthHandler.removeAll(player);
     }
 
     @SubscribeEvent
@@ -69,16 +71,41 @@ public final class BackpackBuffHandler {
         if (bag == null) {
             removeAll(player);
             removeLight(player);
+            BackpackHealthHandler.removeAll(player);
             return;
         }
 
+        // Health regen is per-tick; the potion effects below only need the 20-tick refresh.
+        BackpackHealthHandler.update(player, bag);
         updateLight(player, bag);
         if (player.ticksExisted % REFRESH_TICKS != 0) return;
 
-        for (int id = BagSettings.BUFF_REGEN; id < BagSettings.COUNT; id++) {
+        for (int id = BagSettings.BUFF_RESISTANCE; id < BagSettings.COUNT; id++) {
             if (id == BagSettings.MINE_LIGHT) continue;
             update(player, bag, id);
         }
+    }
+
+    /**
+     * A dimension change rebuilds the client player entity, so its max-health attribute must be sent
+     * again; re-adding the modifier marks the attribute dirty (see {@link BackpackHealthHandler}).
+     */
+    @SubscribeEvent
+    public void onPlayerChangedDimension(final PlayerEvent.PlayerChangedDimensionEvent event) {
+        final ItemStack bag = BagUtils.getWornInfiniteBackpack(event.player);
+        BackpackHealthHandler.resync(event.player, bag);
+    }
+
+    @SubscribeEvent
+    public void onPlayerRespawn(final PlayerEvent.PlayerRespawnEvent event) {
+        final ItemStack bag = BagUtils.getWornInfiniteBackpack(event.player);
+        BackpackHealthHandler.resync(event.player, bag);
+    }
+
+    @SubscribeEvent
+    public void onPlayerLoggedIn(final PlayerEvent.PlayerLoggedInEvent event) {
+        final ItemStack bag = BagUtils.getWornInfiniteBackpack(event.player);
+        BackpackHealthHandler.resync(event.player, bag);
     }
 
     @SubscribeEvent
@@ -101,6 +128,12 @@ public final class BackpackBuffHandler {
     /** Called immediately after the GUI writes a setting, so toggles feel instant. */
     public void applySetting(final EntityPlayer player, final ItemStack bag, final int settingId) {
         if (player == null || player.worldObj == null || player.worldObj.isRemote) return;
+        if (settingId == BagSettings.HEALTH_BONUS || settingId == BagSettings.HEALTH_REGEN) {
+            // Only the worn bag may affect the player; editing a bag in the inventory waits until
+            // it is equipped and the next tick applies it.
+            if (BagUtils.getWornInfiniteBackpack(player) == bag) BackpackHealthHandler.update(player, bag);
+            return;
+        }
         if (settingId == BagSettings.MINE_LIGHT) {
             updateLight(player, bag);
             return;
@@ -283,13 +316,14 @@ public final class BackpackBuffHandler {
 
     /** True when the setting's source mod is present (the GUI hides rows that would do nothing). */
     public static boolean isAvailable(final int settingId) {
+        if (settingId == BagSettings.HEALTH_BONUS || settingId == BagSettings.HEALTH_REGEN) return true;
         if (settingId == BagSettings.MINE_LIGHT) return BlockBackpackLight.forLevel(1) != null;
         return !BagSettings.isBuffSetting(settingId) || potionFor(settingId) != null;
     }
 
     /** Used by {@link elinarcurios.util.StatusCleanse} so its "bad effect" flag cannot eat a buff. */
     public static boolean isManagedPotion(final int potionId) {
-        for (int id = BagSettings.BUFF_REGEN; id < BagSettings.COUNT; id++) {
+        for (int id = BagSettings.BUFF_RESISTANCE; id < BagSettings.COUNT; id++) {
             if (id == BagSettings.MINE_LIGHT) continue;
             final Potion potion = potionFor(id);
             if (potion != null && potion.id == potionId) return true;
@@ -303,12 +337,6 @@ public final class BackpackBuffHandler {
 
         Potion potion = null;
         switch (settingId) {
-            case BagSettings.BUFF_REGEN:
-                potion = byVanillaId(10); // Regeneration
-                break;
-            case BagSettings.BUFF_HEALTH_BOOST:
-                potion = byVanillaId(21); // Health Boost
-                break;
             case BagSettings.BUFF_RESISTANCE:
                 potion = byVanillaId(11); // Resistance
                 break;
@@ -326,9 +354,6 @@ public final class BackpackBuffHandler {
                 break;
             case BagSettings.BUFF_REFLECT:
                 potion = byClass("PotionReciprocation"); // Blood Magic
-                break;
-            case BagSettings.BUFF_SYNTHESIS:
-                potion = byClass("PotionSynthesis"); // Thaumic Horizons
                 break;
             case BagSettings.BUFF_VIS_REGEN:
                 potion = byClass("PotionVisRegen"); // Thaumic Horizons

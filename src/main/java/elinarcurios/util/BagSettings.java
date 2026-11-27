@@ -11,9 +11,9 @@ import elinarcurios.item.ItemInfiniteBackpack;
  * bag NBT.
  *
  * <p>
- * Settings 0-11 are the original movement/perception page (page 1); 12-22 are the leveled page 2
- * (10 buffs + the miner light); 23-25 are the on/off page 3. New settings default to 0 (off), so
- * existing bags keep their old behaviour.
+ * Settings 0-11 are the original movement/perception page (page 1); 12-21 are the health + potion
+ * page 2 (2 custom health values, 7 potion buffs and the miner light); 22-24 are the on/off page 3.
+ * New settings default to 0 (off), so existing bags keep their old behaviour.
  */
 public final class BagSettings {
 
@@ -33,50 +33,48 @@ public final class BagSettings {
     public static final int REVEAL = 10;
     public static final int NODES = 11;
 
-    // Page 2: leveled buffs (0 = off, 1 = level I) + miner light.
-    public static final int BUFF_REGEN = 12;
-    public static final int BUFF_HEALTH_BOOST = 13;
+    // Page 2: custom health + leveled buffs (0 = off, 1 = level I) + miner light.
+    public static final int HEALTH_BONUS = 12;
+    public static final int HEALTH_REGEN = 13;
     public static final int BUFF_RESISTANCE = 14;
     public static final int BUFF_ABSORPTION = 15;
     public static final int BUFF_HASTE = 16;
     public static final int BUFF_STRENGTH = 17;
     public static final int BUFF_JUMP = 18;
     public static final int BUFF_REFLECT = 19;
-    public static final int BUFF_SYNTHESIS = 20;
-    public static final int BUFF_VIS_REGEN = 21;
-    public static final int MINE_LIGHT = 22;
+    public static final int BUFF_VIS_REGEN = 20;
+    public static final int MINE_LIGHT = 21;
 
     // Page 3: on/off buffs (no levels).
-    public static final int BUFF_WELL_FED = 23;
-    public static final int BUFF_VAMPIRIC_AURA = 24;
-    public static final int BUFF_SOUL_CROSS = 25;
+    public static final int BUFF_WELL_FED = 22;
+    public static final int BUFF_VAMPIRIC_AURA = 23;
+    public static final int BUFF_SOUL_CROSS = 24;
 
-    public static final int COUNT = 26;
+    public static final int COUNT = 25;
 
     /** NBT keys, in setting id order. */
     public static final String[] KEYS = { "flight", "flySpeed", "flyVertical", "flyLock", "flyInertia", "walkSpeed",
-        "jump", "hillStep", "mineBoost", "naturalist", "reveal", "nodes", "buffRegen", "buffHealthBoost",
-        "buffResistance", "buffAbsorption", "buffHaste", "buffStrength", "buffJump", "buffReflect", "buffSynthesis",
-        "buffVisRegen", "buffMineLight", "buffWellFed", "buffVampiricAura", "buffSoulCross" };
+        "jump", "hillStep", "mineBoost", "naturalist", "reveal", "nodes", "healthBonus", "healthRegen",
+        "buffResistance", "buffAbsorption", "buffHaste", "buffStrength", "buffJump", "buffReflect", "buffVisRegen",
+        "buffMineLight", "buffWellFed", "buffVampiricAura", "buffSoulCross" };
 
     /** Translation keys of the labels, in setting id order. */
     public static final String[] LANG_KEYS = { "elinarcurios.config.flight", "elinarcurios.config.flySpeed",
         "elinarcurios.config.flyVertical", "elinarcurios.config.flyLock", "elinarcurios.config.flyInertia",
         "elinarcurios.config.walkSpeed", "elinarcurios.config.jump", "elinarcurios.config.hillStep",
         "elinarcurios.config.mineBoost", "elinarcurios.config.naturalist", "elinarcurios.config.reveal",
-        "elinarcurios.config.nodes", "elinarcurios.config.buffRegen", "elinarcurios.config.buffHealthBoost",
+        "elinarcurios.config.nodes", "elinarcurios.config.healthBonus", "elinarcurios.config.healthRegen",
         "elinarcurios.config.buffResistance", "elinarcurios.config.buffAbsorption", "elinarcurios.config.buffHaste",
         "elinarcurios.config.buffStrength", "elinarcurios.config.buffJump", "elinarcurios.config.buffReflect",
-        "elinarcurios.config.buffSynthesis", "elinarcurios.config.buffVisRegen", "elinarcurios.config.buffMineLight",
-        "elinarcurios.config.buffWellFed", "elinarcurios.config.buffVampiricAura",
-        "elinarcurios.config.buffSoulCross" };
+        "elinarcurios.config.buffVisRegen", "elinarcurios.config.buffMineLight", "elinarcurios.config.buffWellFed",
+        "elinarcurios.config.buffVampiricAura", "elinarcurios.config.buffSoulCross" };
 
     private static final boolean[] BOOLEAN = { true, false, false, true, true, false, false, true, true, true, true,
-        true, false, false, false, false, false, false, false, false, false, false, false, true, true, true };
+        true, false, false, false, false, false, false, false, false, false, false, true, true, true };
     private static final float[] DEFAULTS = { 1F, 0F, 0F, 0F, 0F, 0F, 0F, 1F, 1F, 1F, 1F, 1F, 0F, 0F, 0F, 0F, 0F, 0F,
-        0F, 0F, 0F, 0F, 0F, 0F, 0F, 0F };
-    private static final float[] MAXIMUMS = { 1F, 6F, 8F, 1F, 1F, 8F, 15F, 1F, 1F, 1F, 1F, 1F, 6F, 10F, 5F, 10F, 10F,
-        10F, 10F, 10F, 8F, 8F, 15F, 1F, 1F, 1F };
+        0F, 0F, 0F, 0F, 0F, 0F, 0F };
+    private static final float[] MAXIMUMS = { 1F, 6F, 8F, 1F, 1F, 8F, 15F, 1F, 1F, 1F, 1F, 1F, 65535F, 64F, 5F, 10F,
+        10F, 10F, 10F, 10F, 8F, 15F, 1F, 1F, 1F };
 
     private BagSettings() {}
 
@@ -84,10 +82,10 @@ public final class BagSettings {
         return id >= 0 && id < COUNT && BOOLEAN[id];
     }
 
-    /** GUI page of a setting: 1 = movement, 2 = leveled buffs + light, 3 = on/off buffs. */
+    /** GUI page of a setting: 1 = movement, 2 = health + leveled buffs + light, 3 = on/off buffs. */
     public static int pageOf(final int id) {
         if (id >= 0 && id <= NODES) return 1;
-        if (id >= BUFF_REGEN && id <= MINE_LIGHT) return 2;
+        if (id >= HEALTH_BONUS && id <= MINE_LIGHT) return 2;
         if (id >= BUFF_WELL_FED && id <= BUFF_SOUL_CROSS) return 3;
         return 0;
     }
@@ -96,14 +94,14 @@ public final class BagSettings {
     public static int rowOf(final int id) {
         final int page = pageOf(id);
         if (page == 1) return id;
-        if (page == 2) return id - BUFF_REGEN;
+        if (page == 2) return id - HEALTH_BONUS;
         if (page == 3) return id - BUFF_WELL_FED;
         return 0;
     }
 
-    /** True for the buff/light page settings (pages 2 and 3). */
+    /** True for page 2/3 settings that are implemented as a potion effect. */
     public static boolean isBuffSetting(final int id) {
-        return id >= BUFF_REGEN && id < COUNT;
+        return id >= BUFF_RESISTANCE && id < COUNT && id != MINE_LIGHT;
     }
 
     public static float minValue(final int id) {
@@ -115,8 +113,8 @@ public final class BagSettings {
     }
 
     public static float step(final int id) {
-        if (id >= BUFF_REGEN) return 1F;
-        return isBoolean(id) ? 1F : 0.1F;
+        if (isBoolean(id)) return 1F;
+        return pageOf(id) == 1 ? 0.1F : 1F;
     }
 
     private static NBTTagCompound peekTag(final ItemStack stack) {

@@ -14,6 +14,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiLabel;
+import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.renderer.OpenGlHelper;
 import net.minecraft.client.renderer.RenderHelper;
@@ -64,8 +65,12 @@ public final class GuiInfiniteBackpack extends GuiContainer {
     private static final int PANEL_HEIGHT = 232;
     private static final int ROW_TOP = 32;
     private static final int ROW_HEIGHT = 16;
+    private static final int VALUE_BOX_X = 204;
+    private static final int VALUE_BOX_WIDTH = 44;
     private boolean extraConfigOpen;
     private int configPage = 1;
+    private GuiTextField valueEditor;
+    private int valueEditorId = -1;
 
     private Slot clickedSlot;
     private boolean isRightMouseClick;
@@ -103,6 +108,7 @@ public final class GuiInfiniteBackpack extends GuiContainer {
     @Override
     public void initGui() {
         super.initGui();
+        cancelValueEditor();
         buttonList.clear();
         // Equip/unequip: small button in the top-right corner, clear of the slot grid.
         buttonList.add(
@@ -219,11 +225,12 @@ public final class GuiInfiniteBackpack extends GuiContainer {
     private void setExtraConfigOpen(final boolean open) {
         extraConfigOpen = open;
         if (open) configPage = 1;
+        cancelValueEditor();
         refreshConfigVisibility();
         refreshExtraConfig();
     }
 
-    /** Shows only the controls of the current page (page 1 / 2 / 4), plus the page buttons. */
+    /** Shows only the controls of the current page (pages 1-3), plus the page buttons. */
     private void refreshConfigVisibility() {
         for (Object o : buttonList) {
             final GuiButton b = (GuiButton) o;
@@ -255,7 +262,84 @@ public final class GuiInfiniteBackpack extends GuiContainer {
         }
     }
 
+    // ---------------------------------------------------------------- numeric value editor
+
+    /**
+     * Row whose value label is under the mouse, or -1. Clicking the yellow value lets the player type
+     * an exact number (the +/- buttons stay for small adjustments; 65535 would otherwise be 65535
+     * clicks).
+     */
+    private int valueSettingAt(final int mouseX, final int mouseY) {
+        final int panelX = guiLeft + (xSize - PANEL_WIDTH) / 2;
+        final int panelY = guiTop + 22;
+        if (mouseX < panelX + VALUE_BOX_X || mouseX >= panelX + VALUE_BOX_X + VALUE_BOX_WIDTH) return -1;
+        if (mouseY < panelY + ROW_TOP) return -1;
+        final int row = (mouseY - panelY - ROW_TOP) / ROW_HEIGHT;
+        if (row < 0 || (mouseY - panelY - ROW_TOP) % ROW_HEIGHT >= 12) return -1;
+        for (int id = 0; id < BagSettings.COUNT; id++) {
+            if (BagSettings.pageOf(id) != configPage) continue;
+            if (!BackpackBuffHandler.isAvailable(id)) continue;
+            if (BagSettings.isBoolean(id)) continue;
+            if (BagSettings.rowOf(id) == row) return id;
+        }
+        return -1;
+    }
+
+    private void beginValueEdit(final int settingId) {
+        final int panelX = guiLeft + (xSize - PANEL_WIDTH) / 2;
+        final int panelY = guiTop + 22;
+        final int rowY = panelY + ROW_TOP + BagSettings.rowOf(settingId) * ROW_HEIGHT;
+        final float value = BagSettings.getFloat(getContainer().getBagStack(), settingId);
+        final String text = BagSettings.pageOf(settingId) == 1 ? String.format(java.util.Locale.ROOT, "%.1f", value)
+            : Integer.toString(Math.round(value));
+        valueEditor = new GuiTextField(fontRendererObj, panelX + VALUE_BOX_X, rowY, VALUE_BOX_WIDTH, 12);
+        valueEditor.setMaxStringLength(7);
+        valueEditor.setTextColor(0xFFFF80);
+        valueEditor.setText(text);
+        valueEditor.setCursorPositionEnd();
+        valueEditor.setSelectionPos(0);
+        valueEditor.setFocused(true);
+        valueEditorId = settingId;
+    }
+
+    private void cancelValueEditor() {
+        valueEditor = null;
+        valueEditorId = -1;
+    }
+
+    /** Parses the typed value, writes it to the bag NBT and syncs it to the server. */
+    private void commitValueEditor() {
+        if (valueEditor == null || valueEditorId < 0) return;
+        final int settingId = valueEditorId;
+        final ItemStack bag = getContainer().getBagStack();
+        final String text = valueEditor.getText()
+            .trim();
+        float value;
+        try {
+            value = BagSettings.pageOf(settingId) == 1 ? Float.parseFloat(text) : Integer.parseInt(text);
+        } catch (final NumberFormatException invalid) {
+            cancelValueEditor();
+            return;
+        }
+        if (Float.isNaN(value) || Float.isInfinite(value)) {
+            cancelValueEditor();
+            return;
+        }
+        final float stored = BagSettings.set(bag, settingId, value);
+        ElinarCurios.networkWrapper.sendToServer(new SetBagSettingPacket.Message(settingId, stored));
+        cancelValueEditor();
+        refreshExtraConfig();
+    }
+
+    private boolean isMouseOverValueEditor(final int mouseX, final int mouseY) {
+        return valueEditor != null && mouseX >= valueEditor.xPosition
+            && mouseX < valueEditor.xPosition + valueEditor.width
+            && mouseY >= valueEditor.yPosition
+            && mouseY < valueEditor.yPosition + valueEditor.height;
+    }
+
     private void handleExtraConfigButton(final int local) {
+        cancelValueEditor();
         final int settingId = local / 3;
         final int action = local % 3;
         if (settingId < 0 || settingId >= BagSettings.COUNT) return;
@@ -308,6 +392,7 @@ public final class GuiInfiniteBackpack extends GuiContainer {
         } else if (button.id == BTN_EXTRA_DONE) {
             setExtraConfigOpen(false);
         } else if (button.id >= BTN_EXTRA_PAGE_BASE) {
+            cancelValueEditor();
             configPage = button.id - BTN_EXTRA_PAGE_BASE;
             refreshConfigVisibility();
             refreshExtraConfig();
@@ -473,11 +558,18 @@ public final class GuiInfiniteBackpack extends GuiContainer {
             final int rowY = panelY + ROW_TOP + BagSettings.rowOf(id) * ROW_HEIGHT;
             fontRendererObj
                 .drawStringWithShadow(I18n.format(BagSettings.LANG_KEYS[id]), panelX + 10, rowY + 2, 0xE0E0E0);
-            if (!BagSettings.isBoolean(id)) {
+            if (!BagSettings.isBoolean(id) && id != valueEditorId) {
                 final float value = BagSettings.getFloat(bag, id);
-                fontRendererObj.drawStringWithShadow(valueLabel(id, value), panelX + 226, rowY + 2, 0xFFFF80);
+                final String text = valueLabel(id, value);
+                fontRendererObj.drawStringWithShadow(
+                    text,
+                    panelX + VALUE_BOX_X + VALUE_BOX_WIDTH - fontRendererObj.getStringWidth(text),
+                    rowY + 2,
+                    0xFFFF80);
             }
         }
+
+        if (valueEditor != null) valueEditor.drawTextBox();
 
         for (Object o : buttonList) {
             final GuiButton button = (GuiButton) o;
@@ -488,14 +580,35 @@ public final class GuiInfiniteBackpack extends GuiContainer {
     @Override
     public void updateScreen() {
         super.updateScreen();
-        if (extraConfigOpen) refreshExtraConfig();
+        if (extraConfigOpen) {
+            refreshExtraConfig();
+            if (valueEditor != null) valueEditor.updateCursorCounter();
+        }
+    }
+
+    @Override
+    public void onGuiClosed() {
+        cancelValueEditor();
+        super.onGuiClosed();
     }
 
     @Override
     protected void keyTyped(final char typedChar, final int keyCode) {
-        if (extraConfigOpen && keyCode == Keyboard.KEY_ESCAPE) {
-            setExtraConfigOpen(false);
-            return;
+        if (extraConfigOpen) {
+            if (valueEditor != null) {
+                if (keyCode == Keyboard.KEY_RETURN) {
+                    commitValueEditor();
+                } else if (keyCode == Keyboard.KEY_ESCAPE) {
+                    cancelValueEditor();
+                } else {
+                    valueEditor.textboxKeyTyped(typedChar, keyCode);
+                }
+                return;
+            }
+            if (keyCode == Keyboard.KEY_ESCAPE) {
+                setExtraConfigOpen(false);
+                return;
+            }
         }
         super.keyTyped(typedChar, keyCode);
     }
@@ -643,6 +756,18 @@ public final class GuiInfiniteBackpack extends GuiContainer {
     protected void mouseClicked(int p_73864_1_, int p_73864_2_, int p_73864_3_) {
         if (extraConfigOpen) {
             if (p_73864_3_ == 0) {
+                if (valueEditor != null) {
+                    if (isMouseOverValueEditor(p_73864_1_, p_73864_2_)) {
+                        valueEditor.mouseClicked(p_73864_1_, p_73864_2_, p_73864_3_);
+                        return;
+                    }
+                    commitValueEditor();
+                }
+                final int valueId = valueSettingAt(p_73864_1_, p_73864_2_);
+                if (valueId >= 0) {
+                    beginValueEdit(valueId);
+                    return;
+                }
                 for (int i = 0; i < this.buttonList.size(); ++i) {
                     final GuiButton guibutton = (GuiButton) this.buttonList.get(i);
                     if (!guibutton.visible) continue;

@@ -87,7 +87,9 @@ src/main/java/elinarcurios/
 │   └── RenderItemInfinity.java   # K/M/B 大数量渲染(移植自 Avaritiaddons)
 ├── player/
 │   ├── BagProperty.java          # 背上背包的存储(玩家扩展属性,存档持久化)
-│   └── PlayerEventHandler.java   # 属性注册、tick buff、死亡掉落、登录同步
+│   ├── PlayerEventHandler.java   # 属性注册、tick buff、死亡掉落、登录同步
+│   ├── BackpackBuffHandler.java  # 额外配置页药水效果 + 矿灯
+│   └── BackpackHealthHandler.java# ★生命上限(属性修饰符)+ 每 tick 回血
 ├── network/                      # 全部网络消息(服务端权威)
 │   ├── InfiniteBagSlotSync / Click / Confirmation / SyncAllSlots  # 大堆叠同步四件套(移植)
 │   ├── OpenBagPacket             # 打开背包(手持/穿戴)
@@ -874,6 +876,28 @@ GTNL 的 `ECraftingCPUCluster` 都 `extends CraftingCPUCluster`**、走同一个
 - **实现**：`compat/WitcheryPowerCompat`（外层类不引用任何巫术类型，巫术类型全在私有 `Impl` 里，未装巫术时即使被加载也不会解析巫术类）；`PlayerEventHandler#onPlayerTick` 在 `Loader.isModLoaded("witchery")` 守卫内每 tick `update(player, worn && Config.witcheryFreeAltarPower)`；logout / 死亡 clone 移除；停服清理放在 `ElinarCurios#serverStopping` 的 `@Mod.EventHandler`（`FMLServerStoppingEvent` 不是 `Event`，写成 `@SubscribeEvent` 会在 preInit 注册监听器时直接崩）；配置 `witcheryFreeAltarPower`（默认 true）；物品 tooltip 仅在巫术存在且配置开启时显示。
 - **边界**：①未安装巫术 → 分支不进入，功能自动停用；②方案 A 不保证绝对优先：真祭坛比玩家离设备更近时，巫术仍选祭坛并扣它的电，要“永不扣祭坛”需后续 mixin `PowerSources.get` 把随身源排到第一位；③玩家离开 16 格 / 无人值守时失效；④多人服上，站在别人设备旁也会替对方供能；⑤大锅仪式的反噬风险（圈/risk）与能量无关，照旧。
 - **验收**：穿着背包站在大锅旁（先不放祭坛）完整走一次幸运液滴仪式（约 10.5 s 出锅）；再看“有祭坛且祭坛比玩家更近”时是否扣电；不装巫术时游戏行为与以前完全一致。
+
+### 5.40 无尽背包·自定义生命上限与每 tick 回血（dev，2026-11-28）
+
+**需求原话**：「我现在想简化一下我的无尽背包效果 去掉生命恢复、生命提升、光合作用 改为可调的生命提升和生命恢复（这两个不是buff）一个是自定义的生命增加值（0-65535）第二个是自定义的生命恢复，每tick恢复多少血量（1-64），这个满血停止」；并要求研究「哪种生命提升跨维度一瞬间仍生效」。
+
+**研究结论（为什么 Spice of Life 稳、匠魂不稳）**：
+- Spice of Life 2.2.12-carrot：`MaxHealthHandler.updateFoodHPModifier` 用固定 UUID `f88d6ac1-4193-4ff0-85f5-f0357fe89d17` 给 `maxHealth` 加 `AttributeModifier(op=0)`；`FoodTracker#onPlayerChangedDimension` 会调 `syncFoodHistory` → 再无条件 remove+apply 一次。重新 apply 会把该属性标记为 dirty，下一 tick `EntityTrackerEntry` 才发 `S20PacketEntityProperties` 给客户端。
+- 匠魂心之容器：`ArmorExtended#recalculateHealth` 只在 `bonusHP - stats.bonusHealth != 0` 时才 remove/apply；`TPlayerHandler` 只在登录/重生 recalculate，没有 `PlayerChangedDimensionEvent`。1.7.10 改维度时服务端 `EntityPlayerMP` 不重建（属性还在），但客户端 `Minecraft#setDimensionAndSpawnPlayer` 会新建 `EntityPlayerSP`（属性全丢）；服务端没有 dirty 属性 → 不补发 S20 → 客户端血条先回到 20，等下一次别的属性变化才恢复。这对应「跨维度一瞬间被刷掉、过一会才回来」。
+- 更稳做法：固定 UUID + 维度变化/登录/重生时**无条件重挂一次**（同 SoL），每 tick 兜底检查；客户端不需要等别的属性变化。
+
+**实现**：
+- `BagSettings` 第 2 页：删除旧 ID 12 生命恢复、13 生命提升、20 光合作用，新增 `healthBonus`（0-65535，额外最大生命）与 `healthRegen`（0-64 HP/tick，0=关）；其余 buff 的 NBT 键不变，老背包按字符串键读取，不需要迁移（旧的三个键被忽略）。
+- 实现：`BackpackHealthHandler`（固定 UUID 的 `maxHealth` 修饰符 + 每 tick 回血）、`BackpackBuffHandler`（刷新点 + 旧 buff 清理）、`GuiInfiniteBackpack`（数值点击输入）；`EntityJoinWorldEvent` 作为通用补发入口。
+- `BackpackHealthHandler`：在 `SharedMonsterAttributes.maxHealth` 上加固定 UUID 的 `AttributeModifier(op=0)`；每 tick 确保存在/数值正确；`healthRegen` 直接 `setHealth(min(max, health+amount))`，满血停止。装备/卸下/改数值即时生效；卸下时移除修饰符并把当前血量夹到新上限。
+- 刷新点：`PlayerChangedDimensionEvent`、`PlayerRespawnEvent`、`PlayerLoggedInEvent` 以及 `EntityJoinWorldEvent`（覆盖自定义传送/重新加世界的路径）调 `resync`；`resync` 会**直接补发一次 `S20PacketEntityProperties`**，不等 tracker 下一 tick，同时保留了 dirty 标记做兜底；每 tick 的 `update` 再检查一次修饰符是否存在/数值是否正确。
+- GUI：第 2 页 10 行；黄色数值可点击直接输入（65535 用 +/- 不现实），保留 +/- 做微调。只对**穿戴中的背包**生效；编辑物品栏里的背包不会立刻加血，穿上后下一 tick 生效。
+
+**边界/已知**：
+- 生命上限增加时不按比例补当前血量（与原版 Health Boost / 匠魂心容器一致）；调低上限会把当前血量夹到新上限。
+- 65535 不会把匠魂 `HealthBarRenderer` 的循环撑爆（它只画最后两排 `health/20` 的额外心），但那两排心只代表最后 40 HP 左右的窗口，不代表完整上限；大数值以 Better HUD 的数字读数为准。
+- 旧版三个药水效果在升级后不再刷新，最长 60 tick 内自然结束。
+- 未做实机验证（本轮只编译通过）；验收：跨维度看血条是否还满、退出重进、死亡重生、穿上/脱下、把两项设为 0/64/65535、满血时不再回血。
 
 ## 6. 集成到整合包
 

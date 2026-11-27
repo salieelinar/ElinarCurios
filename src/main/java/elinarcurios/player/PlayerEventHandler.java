@@ -60,6 +60,21 @@ public class PlayerEventHandler {
         }
     }
 
+    /**
+     * Universal safety net for player entity re-creation (vanilla and modded teleporters): whenever
+     * the server puts a player into a world, force the health attribute snapshot out again. The
+     * dedicated dimension/login/respawn handlers in {@link BackpackBuffHandler} do the same; this one
+     * also covers custom teleports that re-add the player without firing those events.
+     */
+    @SubscribeEvent
+    public void onPlayerJoinWorld(final EntityJoinWorldEvent event) {
+        if (event.world == null || event.world.isRemote) return;
+        if (!(event.entity instanceof EntityPlayer)) return;
+        final EntityPlayer player = (EntityPlayer) event.entity;
+        final ItemStack bag = BagUtils.getWornInfiniteBackpack(player);
+        if (bag != null) BackpackHealthHandler.resync(player, bag);
+    }
+
     /** Witchery: drop the wearable power source on logout (the per-tick sync stops firing). */
     @SubscribeEvent
     public void onPlayerLoggedOut(final PlayerEvent.PlayerLoggedOutEvent event) {
